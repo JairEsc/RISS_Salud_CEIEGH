@@ -26,8 +26,38 @@ getIsochrones_mapbox=function(coord,times=c(5,15,25,35)){
 }
 
 
+interseccion_optima = function(datos1, datos2){
+  
+  datos1 = datos1 |> 
+    dplyr::rename(tiempo = dplyr::any_of("contour"))
+  
+  datos2 = datos2 |> 
+    dplyr::rename(tiempo = dplyr::any_of("contour"))
+  
+  
+  interseccion = sf::st_intersection(x = datos1, y = datos2) |> 
+    dplyr::rowwise() |> 
+    dplyr::mutate(tiempo = min(tiempo, tiempo.1)) |> 
+    dplyr::select(tiempo) |> dplyr::arrange(tiempo) |> 
+    dplyr::mutate(geometry = sf::st_make_valid(geometry))
+  
+  interseccion_junto = sf::st_union(interseccion) |>  sf::st_as_sf() |> sf::st_make_valid()
+  
+  datos1_act = datos1 |>  sf::st_difference(y = interseccion_junto) |>  sf::st_collection_extract(type = "POLYGON", warn = F) 
+  datos2_act = datos2 |>  sf::st_difference(y = interseccion_junto) |>  sf::st_collection_extract(type = "POLYGON", warn = F)
+  
+  
+  datos = dplyr::bind_rows(datos1_act, datos2_act, interseccion) |> 
+    dplyr::mutate(geometry = sf::st_make_valid(geometry)) |> 
+    dplyr::arrange(tiempo)
+  
+  rownames(datos) = NULL
+  
+  return(datos)
+}
 
 
+### Ignorar por el momento ########################
 interseccion = function(datos1, datos2){
   
   ### Posible linea de conflicto, pensar
@@ -73,38 +103,7 @@ interseccion = function(datos1, datos2){
   
   return(datos)
 }
-
-
-
-interseccion_optima = function(datos1, datos2){
-  
-  datos1 = datos1 |> 
-    dplyr::rename(tiempo = dplyr::any_of("contour"))
-  
-  datos2 = datos2 |> 
-    dplyr::rename(tiempo = dplyr::any_of("contour"))
-  
-  
-  interseccion = sf::st_intersection(x = datos1, y = datos2) |> 
-    dplyr::rowwise() |> 
-    dplyr::mutate(tiempo = min(tiempo, tiempo.1)) |> 
-    dplyr::select(tiempo) |> dplyr::arrange(tiempo) |> 
-    dplyr::mutate(geometry = sf::st_make_valid(geometry))
-  
-  interseccion_junto = sf::st_union(interseccion) |>  sf::st_as_sf() |> sf::st_make_valid()
-  
-  datos1_act = datos1 |>  sf::st_difference(y = interseccion_junto) |>  sf::st_collection_extract(type = "POLYGON", warn = F) 
-  datos2_act = datos2 |>  sf::st_difference(y = interseccion_junto) |>  sf::st_collection_extract(type = "POLYGON", warn = F)
-  
-  
-  datos = dplyr::bind_rows(datos1_act, datos2_act, interseccion) |> 
-    dplyr::mutate(geometry = sf::st_make_valid(geometry)) |> 
-    dplyr::arrange(tiempo)
-  
-  rownames(datos) = NULL
-  
-  return(datos)
-}
+##################################################
 
 
 
