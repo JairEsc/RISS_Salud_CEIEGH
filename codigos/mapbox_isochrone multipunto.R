@@ -4,6 +4,7 @@ library(httr)
 library(sf)
 library(sp)
 library(geojsonR)
+library(osrm)
 
 bks <-  c(5,15,25,35,45,60,75,90)
 
@@ -17,7 +18,7 @@ iso2 <- osrmIsochrone(loc = clues_en_operacion[25,],
 coords_1=gsub(" ","",gsub("\\)","",gsub("\\(","",gsub("c","",clues_en_operacion[1,] |> st_geometry() |> as.character()))))
 coords_2=gsub(" ","",gsub("\\)","",gsub("\\(","",gsub("c","",clues_en_operacion[25,] |> st_geometry() |> as.character()))))
 time <- paste(c(5,15,25,35),collapse = ",")
-source("../../Reutilizables/Postgres_BUIG/token_mapbox.R")
+source("codigos/token_mapbox.R")
 # Download data from Mapbox API
 library(mapgl)
 getIsochrones_mapbox=function(coord,times=c(5,15,25,35)){
@@ -57,8 +58,8 @@ clue_1=getIsochrones_mapbox(coord = gsub(" ","",gsub("\\)","",gsub("\\(","",gsub
 clue_2=getIsochrones_mapbox(coord = gsub(" ","",gsub("\\)","",gsub("\\(","",gsub("c","",clues_en_operacion[25,] |> st_geometry() |> as.character()))))
                             ,times=c(10,20,40,60))
 
-plot(clue_1)
-plot(clue_2,col='red',add=T)
+plot(clue_1, col = "blue", add=T)
+plot(clue_2, col='red', add=T)
 
 library(leaflet)
 
@@ -72,3 +73,4 @@ leaflet() |>
               group = "B") |> 
   addMarkers(data=clues_en_operacion[1,]) |> 
   addMarkers(data=clues_en_operacion[25,]) 
+

@@ -2,3 +2,4 @@
 inputs/*
 outputs/*
 .R*
+codigos/token_mapbox.R
