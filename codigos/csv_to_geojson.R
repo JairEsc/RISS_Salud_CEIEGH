@@ -12,7 +12,7 @@ clues |> sapply(\(zz){
 
 
 do.call(plyr::rbind.fill,clues)->union_clues
-
+union_clues |> write.csv("inputs/UNIDADES_SALUD_HGO.csv",row.names = F,fileEncoding = "UTF-8")
 
 clues_fuera_operacion=union_clues |> 
   dplyr::filter(archivo_origen=="CLUES_202509 (Fuera_Operación)") |> 
@@ -22,7 +22,6 @@ clues_en_operacion=union_clues |>
   dplyr::filter(archivo_origen!="CLUES_202509 (Fuera_Operación)") |> 
   sf::st_as_sf(coords=c('LONGITUD','LATITUD'),crs=4326)
 
-
-leaflet::leaflet() |> 
-  leaflet::addTiles() |> 
-  leaflet::addMarkers(data=clues_en_operacion,label = clues_en_operacion$NOMBRE.DE.LA.INSTITUCION,clusterOptions = leaflet::markerClusterOptions())
+# leaflet::leaflet() |> 
+#   leaflet::addTiles() |> 
+#   leaflet::addMarkers(data=clues_en_operacion,label = clues_en_operacion$NOMBRE.DE.LA.INSTITUCION,clusterOptions = leaflet::markerClusterOptions())

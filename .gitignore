@@ -3,3 +3,4 @@ inputs/*
 outputs/*
 .R*
 codigos/token_mapbox.R
+codigos/conexion_supabase.R
