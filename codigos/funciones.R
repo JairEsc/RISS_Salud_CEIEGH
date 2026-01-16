@@ -1,10 +1,11 @@
+library(httr)
 getIsochrones_mapbox=function(coord,times=c(5,15,25,35)){
   iso.url <- paste("https://api.mapbox.com/isochrone/v1/mapbox/driving/",
                    coord,
                    "?contours_minutes=",paste(times,collapse = ","),"&polygons=true&access_token=",Sys.getenv("token_mapbox"),sep = "")
   
   #GET()# Compile each individual catchment area polygon
-  r = GET(url = iso.url)
+  r = httr::GET(url = iso.url)
   geojson_txt = content(r, as = "text", encoding = "UTF-8")
   isochrones_sf = sf::st_read(geojson_txt, quiet = TRUE)
   isochrones_sf = isochrones_sf |> 

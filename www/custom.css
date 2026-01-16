@@ -2,18 +2,18 @@ body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     background-color: #f4f7f6;
 }
+.colorRojo{
+  background-color: #f1ad98 !important;
+}
 
-/* 2. Ocultar el panel de cuenta original */
 .shiny-server-account { display: none; }
 
-/* 3. Estilo moderno para el SelectInput */
 .sidebar-controls {
     padding: 15px;
 }
 
-/* Redondear bordes del selectize */
 .selectize-input {
-    border-radius: 20px !important; /* Bordes muy redondeados */
+    border-radius: 20px !important; 
     padding: 10px 15px !important;
     border: 1px solid #dce1e4 !important;
     box-shadow: none !important;
@@ -25,13 +25,11 @@ body {
     box-shadow: 0 0 5px rgba(60, 141, 188, 0.5) !important;
 }
 
-/* Ajustar el dropdown */
 .selectize-dropdown {
     border-radius: 10px !important;
     overflow: hidden;
 }
 
-/* 4. Estilo del Main Body y Boxes */
 .content-wrapper {
     background-color: #ffffff;
 }
@@ -44,7 +42,6 @@ body {
     padding: 0 !important;
 }
 
-/* 5. Sidebar moderno */
 .main-sidebar {
     background-color: #222d32 !important;
     border-right: 1px solid #eee;

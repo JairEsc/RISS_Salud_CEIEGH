@@ -21,12 +21,14 @@
 library(shiny)
 library(bslib)
 library(leaflet)
+library(leaflet.extras)
 library(sf)
 library(shinydashboard)
 library(shinydashboardPlus)
 
 source("codigos/csv_to_geojson.R")
-
+source("../../Reutilizables/Postgres_BUIG/token_mapbox.R")
+source("codigos/funciones.R")
 source("../../Reutilizables/Postgres_BUIG/conexion_local.R")
 source("codigos/SIGEH_isochrone.R")
 
@@ -50,6 +52,7 @@ paleta_spectral_comun=colorNumeric(palette = "Spectral",domain = c(10,20,40,60))
 #                )
 
 #ageb_loc=ageb_pob
+#demograficos_scince proviene de definicion_cartografia_demografia
 
 
 ui <- dashboardPage(
@@ -70,7 +73,8 @@ ui <- dashboardPage(
                                 "2do nivel" = "SEGUNDO NIVEL",
                                 "3er nivel" = "TERCER NIVEL"),
                     selectize = TRUE,selected ="SEGUNDO NIVEL" )
-    ),
+    )
+    ,shinyjs::useShinyjs(),
     
     checkboxInput(inputId = "agebs",label = "AGEBs",value = F),
     
@@ -86,7 +90,7 @@ ui <- dashboardPage(
       tabItem(tabName = "map",
               fluidRow(
                 box(width = 12, class = "map-box",
-                    leafletOutput("mapa_principal", width = "100%", height = "85vh")
+                    leafletOutput("mapa_principal", width = "100%", height = "80vh")
                 )
               )
       )
@@ -154,20 +158,20 @@ shinyApp(ui, function(input, output) {
       if(input$agebs==T){
         print(input$agebs)
         leafletProxy("mapa_principal") |>
-          addPolygons(data=ageb_pob,label = paste0(ageb_pob$CVEGEO,"<br>",
-                                                   "Pob. Total:  ",ageb_pob$POB1,"<br>",
-                                                   "Pob. Afiliada SS:  ",ageb_pob$SALUD1,"<br>"
+          addPolygons(data=demograficos_scince,label = paste0(demograficos_scince$CVEGEO,"<br>",
+                                                   "Pob. Total:  ",demograficos_scince$POB1,"<br>",
+                                                   "Pob. Afiliada SS:  ",demograficos_scince$SALUD1,"<br>"
           ) |> lapply(\(x){htmltools::HTML(x)}),
-          group="AGEBs",layerId = paste0("AGEBs",1:nrow(ageb_pob)) )
+          group="AGEBs",layerId = paste0("AGEBs",1:nrow(demograficos_scince)) )
       }
       else{
         print(input$agebs)
         leafletProxy("mapa_principal") |>
-          removeShape(paste0("AGEBs",1:nrow(ageb_pob)))
+          removeShape(paste0("AGEBs",1:nrow(demograficos_scince)))
       }
       
   })
-  
+  lista_objetos_especiales=reactiveVal(value = 0)
   observeEvent(input$mapa_principal_marker_click,{
   #   print(input$mapa_principal_click)
   #   ##Un click sobre el mapa 
@@ -184,9 +188,18 @@ shinyApp(ui, function(input, output) {
                        times =c(10,20,40,60) ) |> st_as_sf() |> st_transform(st_crs("EPSG:4326"))
     print(isocronas_niveles_fijos)
     leafletProxy("mapa_principal") |> 
-      clearGroup(group = "especiales") |> 
+      #clearGroup(group = "especiales") |> 
       addPolygons(data=isocronas_niveles_fijos,group = "especiales",
                   color=paleta_spectral_comun(isocronas_niveles_fijos$contour |> as.numeric()),opacity = 1,fillColor =paleta_spectral_comun(isocronas_niveles_fijos$contour |> as.numeric()),fillOpacity = 0.7 )
+    
+    ##Cuando se agregue una capa de dibujo se prende el botoncito para borrar. Cuando se limpie todo, se descolorea. 
+    ##leaflet-draw-edit-remove
+    lista_objetos_especiales(1)
+    
+    
+    # if(length(input$mapa_principal_draw_all_features)==0){
+    #   shinyjs::addClass()
+    # }
   #   
   #   #Caso poligono
   #   ##Poblaciones, ubicacion, etc. (fijos)
@@ -198,6 +211,30 @@ shinyApp(ui, function(input, output) {
   #   ## coordenada
   #   ## Podría ser una vectorización simple del raster para sacar el promedio. 
   #   
+  })
+  
+  observeEvent(input$mapa_principal_draw_all_features,{
+    if(length(input$mapa_principal_draw_all_features==0){
+      lista_objetos_especiales(0)
+    }
+  })
+  observe(lista_objetos_especiales,{
+    if(lista_objetos_especiales==0){
+      shinyjs::runjs("console.log('prueba')")
+      shinyjs::runjs(code = "
+                   let botonBorrar=document.getElementsByClassName('leaflet-draw-edit-remove')[0]
+                   console.log(botonBorrar)
+                   botonBorrar.classList.remove('colorRojo')
+                   ")
+    }
+    else{
+      shinyjs::runjs("console.log('prueba')")
+      shinyjs::runjs(code = "
+                   let botonBorrar=document.getElementsByClassName('leaflet-draw-edit-remove')[0]
+                   console.log(botonBorrar)
+                   botonBorrar.classList.add('colorRojo')
+                   ")
+    }
   })
   
   
