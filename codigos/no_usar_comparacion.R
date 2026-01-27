@@ -24,8 +24,10 @@ iso1_mapbox=getIsochrones_mapbox(coord = punto_referencia_fijo |> unlist() |> pa
 #plot(iso1_mapbox)
   #Acc_SIGEH
 source("codigos/SIGEH_isochrone.R")
-tiempo_zona=accCost(T.GC, matrix(unlist(consulta$geometry |> st_transform(32614)),nrow = nrow(consulta),ncol = 2,byrow = T))
-
+tiempo_zona=accCost(T.GC, punto_referencia_fijo |> st_transform(st_crs("EPSG:32614")) |> unlist())
+tiempo_zona[tiempo_zona>90]=NA
+tiempo_zona_niveles_fijos=raster::rasterToContour(tiempo_zona, levels = c(10,20,40,60,90))
+tiempo_zona_niveles_fijos |> st_as_sf() |> dplyr::arrange(dplyr::desc(level)) |> plot()
 #plot(tiempo_zona)
 # crs(tiempo_zona)=st_crs("EPSG:32614")$wkt
 # tiempo_zona[ is.infinite(tiempo_zona)]=300

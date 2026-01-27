@@ -14,100 +14,126 @@ getIsochrones_mapbox=function(coord,times=c(5,15,25,35)){
   
   # Add projection
   sf::st_crs(isochrones_sf) = 4326
-  
-  for (i in seq(nrow(isochrones_sf), 2)) {
-    isochrones_sf$geometry[i] = sf::st_difference(isochrones_sf[i, ],isochrones_sf[i - 1, ])$geometry
-  }
-  
-  isochrones_sf = isochrones_sf |> 
-    dplyr::mutate(geometry = sf::st_make_valid(geometry))
-  
-  # Check isochrone polygons
+  ##Pasó algo con este. Quizás actualizaron su API.
+  ##sf::st_difference(isochrones_sf$geometry[4],isochrones_sf$geometry[3])[2] |> st_make_valid() |> plot()
+  ##Esto es una solución, pero está raro.
+  # for (i in seq(nrow(isochrones_sf), 2)) {
+  #   isochrones_sf$geometry[i] = sf::st_difference(isochrones_sf$geometry[i ],isochrones_sf$geometry[i - 1 ])[2]
+  # }
+  # 
+  # isochrones_sf = isochrones_sf |>
+  #   dplyr::mutate(geometry = sf::st_make_valid(geometry))
+
   return(isochrones_sf)
-}
-
-
-interseccion_optima = function(datos1, datos2){
-  
-  datos1 = datos1 |> 
-    dplyr::rename(tiempo = dplyr::any_of("contour"))
-  
-  datos2 = datos2 |> 
-    dplyr::rename(tiempo = dplyr::any_of("contour"))
-  
-  
-  interseccion = sf::st_intersection(x = datos1, y = datos2) |> 
-    dplyr::rowwise() |> 
-    dplyr::mutate(tiempo = min(tiempo, tiempo.1)) |> 
-    dplyr::select(tiempo) |> dplyr::arrange(tiempo) |> 
-    dplyr::mutate(geometry = sf::st_make_valid(geometry))
-  
-  interseccion_junto = sf::st_union(interseccion) |>  sf::st_as_sf() |> sf::st_make_valid()
-  
-  datos1_act = datos1 |>  sf::st_difference(y = interseccion_junto) |>  sf::st_collection_extract(type = "POLYGON", warn = F) 
-  datos2_act = datos2 |>  sf::st_difference(y = interseccion_junto) |>  sf::st_collection_extract(type = "POLYGON", warn = F)
-  
-  
-  datos = dplyr::bind_rows(datos1_act, datos2_act, interseccion) |> 
-    dplyr::mutate(geometry = sf::st_make_valid(geometry)) |> 
-    dplyr::arrange(tiempo)
-  
-  rownames(datos) = NULL
-  
-  return(datos)
-}
-
-
-### Ignorar por el momento ########################
-interseccion = function(datos1, datos2){
-  
-  ### Posible linea de conflicto, pensar
-  datos1 = datos1 |>  
-    dplyr::group_by(contour) |>
-    dplyr::summarise(geometry = sf::st_union(geometry)) |>
-    dplyr::ungroup() |> 
-    dplyr::mutate(geometry = sf::st_make_valid(geometry))
-  
-  datos2 = datos2 |>  
-    dplyr::group_by(contour) |>
-    dplyr::summarise(geometry = sf::st_union(geometry)) |>
-    dplyr::ungroup() |> 
-    dplyr::mutate(geometry = sf::st_make_valid(geometry))
-  
-  #####################################
-  
-  interseccion = sf::st_intersection(x = datos1, y = datos2)
-  interseccion = interseccion |> 
-    dplyr::rowwise() |> 
-    dplyr::mutate(tiempo = min(contour, contour.1)) |> 
-    dplyr::select(tiempo)
-  
-  interseccion_junto = sf::st_union(interseccion) |>  sf::st_as_sf() |> sf::st_make_valid()
-  
-  datos1_act = datos1 |> sf::st_make_valid() |>  sf::st_difference(y = interseccion_junto) |>  sf::st_collection_extract(type = "POLYGON", warn = F) 
-  datos2_act = datos2 |> sf::st_make_valid() |>  sf::st_difference(y = interseccion_junto) |>  sf::st_collection_extract(type = "POLYGON", warn = F)
-  
-  datos1_act = datos1_act |> 
-    dplyr::rename(tiempo = contour) |> 
-    dplyr::mutate(proviene = "datos1")
-  
-  datos2_act = datos2_act |> 
-    dplyr::rename(tiempo = contour) |> 
-    dplyr::mutate(proviene = "datos2")
-  
-  interseccion = interseccion |> 
-    dplyr::mutate(proviene = "interseccion")
-  
-  datos = dplyr::bind_rows(datos1_act, datos2_act, interseccion) |> 
-    dplyr::mutate(geometry = sf::st_make_valid(geometry)) |> 
-    dplyr::rename(contour = tiempo)
-  
-  return(datos)
 }
 ##################################################
 
 
+AccesibilidadPoligono=function(poligono){
+  centroide=st_centroid(poligono)
+  print("centroide:")
+  
+  ##Clave, Nombre de localidad, Nombre de municipio. 
+  #Pob Total. Pob Afiliada. Piramide poblacional. Distribución de afiliación. 
+  ##Tiempo promedio a CLUES de nivel 1
+  ##Tiempo promedio a CLUES de nivel 2 y nombre de la más cercana
+  popup_content <- paste0(
+    "<strong>Clave geográfica:</strong> ", 
+    ((poligono$CVEGEO))
+    ,"<br>",
+    "<strong>Municipio:</strong> ", 
+    ((poligono$NOM_MUN))
+    ,"<br>",
+    "<strong>Localidad:</strong> ", 
+    ((poligono$NOMGEO))
+    ,"<br>",
+    "<strong>Población Estimada:</strong> ", 
+    format(round(poligono$POB1, 0), big.mark = ","), " habitantes"
+     ,"<br>",
+    "<strong>Población Afiliada a SS:</strong> ", 
+    format(round(poligono$SALUD1, 0), big.mark = ","), " habitantes"
+     ,"<br>",
+    "<strong>Tiempo promedio a CLUES de nivel 1 más cercano:</strong> ", 
+    format(round(poligono$tiempo_promedio_CLUES_N1, 1), big.mark = ","), " minutos "
+     ,"<br>",
+    "<strong>Tiempo promedio a CLUES de nivel 2 más cercano:</strong> ", 
+    format(round(poligono$tiempo_promedio_CLUES_N2, 1), big.mark = ","), " minutos"
+     ,"<br>",
+    "<strong>CLUES nivel 2 más cercano: </strong> ", 
+    paste0(poligono$CLUES," - ",poligono$NOMBRE.DE.LA.UNIDAD), ""
+  )
+  print(poligono)
+  if(poligono$POB1==0){
+    popup_content<-"Asegúrate de que la capa de AGEBs y localidades rurales esté activa y que la región seleccionada por ti contenga al menos uno de ellos"
+  }
+  coords <- sf::st_coordinates(centroide)
+  leaflet::leafletProxy("mapa_principal") |> 
+    leaflet::addPopups(
+      lng = coords[1, "X"], # Longitud
+      lat = coords[1, "Y"], # Latitud
+      popup = popup_content,
+      options = leaflet::popupOptions(closeButton = TRUE,closeOnClick = F)
+    )
+  return(0)
 
+}
+AccesibilidadCLUES=function(poligono){
+  centroide=st_centroid(poligono)
+  ##Clave, Nombre de unidad, Nombre de localidad donde se ubica, Nombre de municipio donde se ubica
+  #Pob Total en rango de 10 minutos 
+  #Pob Total afiliada en rango de 10 minutos 
+  #Pob Total en rango de 60 minutos 
+  #Pob Total afiliada en rango de 60 minutos
+  #Num CLUES nivel 1 en rango de 10 minutos
+  #Num CLUES nivel 2 en rango de 10 minutos
+    #Nombre de CLUES nivel 2 más cercano
+  ##Variables de capacidad de atención
+  popup_content <- paste0(
+    "<strong>CLUES:</strong> ", 
+    ((poligono$CLUES))
+    ,"<br>",
+    "<strong>Municipio:</strong> ", 
+    ((poligono$NOM_MUN))
+    ,"<br>",
+    "<strong>Localidad:</strong> ", 
+    ((poligono$NOMGEO))
+    ,"<br>",
+    "<strong>Población Estimada a menos de 10 minutos:</strong> ", 
+    format(round(poligono$POB1T10, 0), big.mark = ","), " habitantes"
+     ,"<br>",
+    "<strong>Población Estimada a menos de 60 minutos:</strong> ", 
+    format(round(poligono$POB1T60, 0), big.mark = ","), " habitantes"
+     ,"<br>",
+    "<strong>Población Afiliada a SS a menos de 10 minutos:</strong> ", 
+    format(round(poligono$SALUD1T10, 0), big.mark = ","), " habitantes"
+     ,"<br>",
+    "<strong>Población Afiliada a SS a menos de 60 minutos:</strong> ", 
+    format(round(poligono$SALUD1T60, 0), big.mark = ","), " habitantes"
+     ,"<br>",
+    "<strong>Número de CLUES de nivel 1 a menos de 10 minutos:</strong> ", 
+    format(round(poligono$num_CLUESN1_T10, 1), big.mark = ","), " minutos "
+    #  ,"<br>", #########Pendientes
+    # "<strong>Tiempo promedio a CLUES de nivel 2 más cercano:</strong> ", 
+    # format(round(poligono$tiempo_promedio_CLUES_N2, 1), big.mark = ","), " minutos"
+    #  ,"<br>",
+    # "<strong>CLUES nivel 2 más cercano: </strong> ", 
+    # paste0(poligono$CLUES," - ",poligono$NOMBRE.DE.LA.UNIDAD), ""
+  )
+  print(poligono)
+  if(poligono$POB1==0){
+    popup_content<-"Asegúrate de que la capa de AGEBs y localidades rurales esté activa y que la región seleccionada por ti contenga al menos uno de ellos"
+  }
+  coords <- sf::st_coordinates(centroide)
+  leaflet::leafletProxy("mapa_principal") |> 
+    leaflet::addPopups(
+      lng = coords[1, "X"], # Longitud
+      lat = coords[1, "Y"], # Latitud
+      popup = popup_content,
+      options = leaflet::popupOptions(closeButton = TRUE,closeOnClick = F)
+    )
+  return(0)
+
+}
 
 
 

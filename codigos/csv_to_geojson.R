@@ -18,10 +18,20 @@ clues_fuera_operacion=union_clues |>
   dplyr::filter(archivo_origen=="CLUES_202509 (Fuera_Operación)") |> 
   dplyr::filter(LATITUD>10) |> 
   sf::st_as_sf(coords=c('LONGITUD','LATITUD'),crs=4326)
-clues_en_operacion=union_clues |> 
+clues_en_operacion_s=union_clues |> 
   dplyr::filter(archivo_origen!="CLUES_202509 (Fuera_Operación)") |> 
   sf::st_as_sf(coords=c('LONGITUD','LATITUD'),crs=4326)
 
-# leaflet::leaflet() |> 
-#   leaflet::addTiles() |> 
-#   leaflet::addMarkers(data=clues_en_operacion,label = clues_en_operacion$NOMBRE.DE.LA.INSTITUCION,clusterOptions = leaflet::markerClusterOptions())
+
+##Aquí va el código para actualizar la tabla en postgres
+clues_en_operacion_s=clues_en_operacion_s |> 
+  dplyr::filter(NIVEL.ATENCION!='NO APLICA')
+
+#1009+188+2
+
+#st_write(clues_en_operacion_s,dsn = local,layer = "clues_en_operacion",append = F,delete_dsn = T)
+
+#st_read(local,'clues_en_operacion')
+#dplyr::tbl(local,"clues_en_operacion") |> dplyr::select(CLUES,geometry) |> dplyr::collect() |> 
+#  dplyr::mutate(geometry=st_as_sfc(geometry)) |> st_as_sf()
+
