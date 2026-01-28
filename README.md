@@ -8,8 +8,12 @@ Por definirse, la actualización de los AGEBs, Localidades Urbanas y Rurales (Es
 ## Procesos
 
     - Construcción única de modelo de accesibilidad carretera (Isocronas SIGEH).
-    - Incorporación de API (mapbox) para la consulta de isocronas a niveles fijos (10,20,40,60) de puntos variables (CLUES / agebs). 
-
+    - Incorporación de API (mapbox) para la consulta de isocronas a niveles fijos (10,20,40,60) de puntos variables (CLUES / agebs). --Se excluye por simplicidad.
+    - Ejecución única de códigos: 
+      -no_usar_calculos_accesibilidad_agebs.R -> (demograficos_info_accesibilidad.geojson)
+      -no_usar_calculos_accesibilidad_clues.R -> (clues_Nk_info_accesibilidad.geojson)
+      -no_usar_calculos_rasters_accesibilidad.R -> (acces_CLUES_nk_max90.tif)
+ 
 *pendiente*: Cálculo de número de personas a más de X minutos -> Tab estadísticas
     Resumen. Se toman 3 cartografías del marco geostadístico de INEGI
         -AGEB
@@ -27,7 +31,8 @@ Por definirse, la actualización de los AGEBs, Localidades Urbanas y Rurales (Es
 
     Para calcular el número de clues (de nivel N) se considera el subconjunto de pixeles con intersección no vacía al polígono (ageb) y se calcula la distancia de cada uno de los centroides de los pixeles a todos los CLUES seleccionados. (Comentario técnico: De haberse tomado el centroide del polígono, los agebs "grandes" podrían tener información poco precisa. Creemos que el promedio de centroides de pixeles que cubren al polígono es un mejor acercamiento)
 
-    (Comentarío técnico: Como es de esperarse, el costo computacional es alto. Dada la periodicidad de actualización de información, no creo que valga la pena optimizar la actualización de estos datos.)
+    (Comentarío técnico: Como es de esperarse, el costo computacional es alto. Dada la periodicidad de actualización de información, no creo que valga la pena optimizar la actualización de estos datos.
+    Utilizamos una librería especializada en extracts para mejorar los tiempos de ejecución)
 
 
 *pendiente*: Cuántas opciones tiene cada AGEB de cada nivel -> Pre-calculado y mostrado en modal

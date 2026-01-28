@@ -135,19 +135,11 @@ shinyApp(ui, function(input, output) {
   input_nivel_at_d=input_nivel_at |> debounce(1000)
   observeEvent(input_nivel_at_d(),
     {
-      print(paste0("Nivel de atencion seleccionado: ", input$nivel_at))
+      #print(paste0("Nivel de atencion seleccionado: ", input$nivel_at))
       clues_solicitados=clues_en_operacion |> dplyr::filter(NIVEL.ATENCION==input$nivel_at | input$nivel_at=="CUALQUIER NIVEL" ) |> dplyr::select(CLUES,NOMBRE.DE.LA.UNIDAD,NIVEL.ATENCION,geometry) |> dplyr::collect() |> 
         dplyr::mutate(geometry=st_as_sfc(geometry)) |> st_as_sf()
       
       showNotification(paste0(nrow(clues_solicitados)," CLUES de ",stringr::str_to_lower(input$nivel_at)) )
-      
-      ##Cambiar por archivos simples
-      # tiempo_zona=accCost(T.GC, matrix(unlist(clues_solicitados$geometry |> st_transform(32614)),nrow = nrow(clues_solicitados),ncol = 2,byrow = T))
-      # crs(tiempo_zona)=st_crs("EPSG:32614")$wkt
-      # tiempo_zona[ is.infinite(tiempo_zona)]=100
-      # tiempo_zona[ tiempo_zona>=90]=NA
-      # iso1_sigeh=raster::rasterToContour(tiempo_zona, levels = c(10,20,40,60))|> st_as_sf() |> st_set_crs(st_crs("EPSG:32614")) |>st_transform(st_crs("EPSG:4326"))
-      # 
       tiempo_zona=switch (input$nivel_at,
                           "PRIMER NIVEL" = raster("inputs/rasters/acces_CLUESN1_max90.tif"),
                           "SEGUNDO NIVEL" = raster("inputs/rasters/acces_CLUESN2_max90.tif"),
@@ -155,7 +147,6 @@ shinyApp(ui, function(input, output) {
                           "CUALQUIER NIVEL" = raster("inputs/rasters/acces_CLUES_max90.tif")
       )
       iso1_sigeh=raster::rasterToContour(tiempo_zona, levels = c(10,20,40,60,90))|> st_as_sf() |> st_set_crs(st_crs("EPSG:32614")) |>st_transform(st_crs("EPSG:4326"))
-      #print(tiempo_zona)
       leafletProxy("mapa_principal") |> ##Esta función se puede generalizar y aislar
         clearMarkers() |> 
         clearImages() |> 
@@ -197,33 +188,49 @@ shinyApp(ui, function(input, output) {
   lista_objetos_especiales <- reactiveVal(value = 0)##Especiales son los que se dibujan. No necesito la lista, nomás saber si está vacía
   
   observeEvent(input$mapa_principal_marker_click,{#2
-    #   print(input$mapa_principal_click)
-    #   ##Un click sobre el mapa 
-    #   ###3 Casos: click sobre clues, poligono (poblacion), raster. 
-    #   
-    #   #Caso clues:
-    #   ##Nombre, ubicacion (mun + loc)
-    #   ##Construcción de isocrona a niveles fijos.
-    
-    ###Construimos el punto a partir del click.
     punto_referencia_fijo=st_point(c(input$mapa_principal_marker_click$lng ,input$mapa_principal_marker_click$lat)) |> st_sfc(crs = 4326)
     #isocronas_niveles_fijos=getIsochrones_mapbox(coord = punto_referencia_fijo |> unlist() |> paste(collapse = ","),
     #                                             times =c(10,20,40,60) ) |> st_as_sf() |> st_transform(st_crs("EPSG:4326"))
-    isocronas_niveles_fijos=accCost(T.GC, punto_referencia_fijo |> st_transform(st_crs("EPSG:32614") ) |> unlist() )
-    isocronas_niveles_fijos=raster::rasterToContour(isocronas_niveles_fijos, levels = 10*c((1:9)))
-    isocronas_niveles_fijos=isocronas_niveles_fijos |> st_as_sf() |> st_set_crs(st_crs("EPSG:32614")) |> dplyr::arrange(dplyr::desc(level)) |> 
+    isocronas_niveles_fijos <- tryCatch({
+      res_raster <- accCost(T.GC, punto_referencia_fijo |> st_transform(st_crs("EPSG:32614")) |> unlist())
+      
+    contornos <- raster::rasterToContour(res_raster, levels = 10 * c(1:9)) |> 
+      st_as_sf() |> 
+      st_set_crs(st_crs("EPSG:32614"))
+      
+    contornos 
+    }, error = function(e) {
+      message("Error en accCost: Generando círculos concéntricos como respaldo.")
+      punto_proyectado <- punto_referencia_fijo |> st_transform(st_crs("EPSG:32614"))
+      # Creamos una secuencia de radios
+      radios <- seq(100, 2500, by = 300)
+      circulos <- do.call(rbind, lapply(radios, function(r) {
+        st_buffer(punto_proyectado, dist = r) |> 
+          mutate(level = as.character(r / 10))
+      }))
+      
+      return(circulos)
+    })
+    isocronas_niveles_fijos <- isocronas_niveles_fijos |> 
+      dplyr::arrange(dplyr::desc(level)) |> 
       st_transform(st_crs("EPSG:4326"))
+    
     leafletProxy("mapa_principal") |> 
-      #clearGroup(group = "especiales") |> 
-      addPolygons(data=isocronas_niveles_fijos,group = "especiales",
-                  color=paleta_spectral_comun(isocronas_niveles_fijos$level |> as.numeric()),opacity = 1,fillColor =paleta_spectral_comun(isocronas_niveles_fijos$level |> as.numeric()),fillOpacity = 0.7 )
+      addPolygons(
+        data = isocronas_niveles_fijos,
+        group = "especiales",
+        color = paleta_spectral_comun(as.numeric(isocronas_niveles_fijos$level)),
+        opacity = 1,
+        fillColor = paleta_spectral_comun(as.numeric(isocronas_niveles_fijos$level)),
+        fillOpacity = 0.7
+      )
     #Generar polígono y mandar a llamar AccesibilidadPoligono o una variante. 
     
     ##Cuando se agregue una capa de dibujo se prende el botoncito para borrar. Cuando se limpie todo, se descolorea. 
     ##leaflet-draw-edit-remove
     lista_objetos_especiales(1)
     
-    
+    AccesibilidadCLUES(poligono = isocronas_niveles_fijos[1,])
     ##Al final no estuvo tan chido el mapbox. Da más problemas que soluciones. 
     ##Mejor calcularlo con accesibilidad sigeh y agregar datos de cobertura (pendiente)
   })
@@ -309,34 +316,9 @@ shinyApp(ui, function(input, output) {
       print(input$mapa_principal_shape_click$id)
       if(grepl(pattern = "AGEB",x = input$mapa_principal_shape_click$id) ){
         
-        print("Click sobre un poligono")
         poligono=demograficos_scince[as.numeric(gsub("AGEBs","",input$mapa_principal_shape_click$id)),]
-        print(poligono)
-        print(poligono |> class())
-        AccesibilidadPoligono(poligono)#{
-        ##Calcula centroide
-        #Isocronas a centroide
-        #Conteo de CLUES por nivel y por tiempo
-        #gráficos(demograficos, CLUES_filtrados,)
-        #}
-        ##Este será el caso base. Se hace para un polígono y se generaliza para conjuntos de polígonos. 
-        
-        ###Nota. Dado que las isocronas son concentricas,  se puede (y debe) inferir las clues por rango disjunto
-        #3 niveles, 4 rangos, 3x4 posibles valores. 
-        ##Resumen: Selecciona el nivel más bajo disponible. 
-        ###Si no existe es porque no hay intersección
-        ####N=N1+N2+N3 el total de clues a menos de T60. 
-        ##### d(N1), d(N2), d(N3) se dividen en 4 según sus intervalos. Con estas se hacen las gráficas de pastel
-        ##Esta comunidad cuenta con N clues a menos de 60 minutos en carretera.
-        
-          # N1 | N2 | N3*
-          # pasteles por tiempo.
-        #Listas de nombres (2) de clues más cercanos.
-        
-        #Generalización? Si se considera un conjunto de agebs: 
-        ## Se toma el centroide del poligono dibujado y se repite. La población corresponde a la suma y la accesibilidad al promedio.
-        
-        #print(conteo_por_nivel_y_rangoT)
+        AccesibilidadPoligono(poligono)
+
       }
     }
 
@@ -346,12 +328,9 @@ shinyApp(ui, function(input, output) {
     data <- input$mapa_principal_draw_new_feature # list
     data <- jsonlite::toJSON(data, auto_unbox = TRUE) # string
     data <- geojsonio::geojson_sf(data) # sf
-    print(data)
     ##Dado un dibujo, se calculan las intersecciones no vacías, se estima la población y viviendas
     ##Se estima la accesibilidad a CLUES por rangos
     interseccion_agebs=st_intersection(demograficos_scince,y = data)
-    print(interseccion_agebs)
-    print("--------------")
     n_poligonos_involucrados=interseccion_agebs |> nrow()
     ##Resumir las intersecciones como la suma.
     data_c_geo=data |> dplyr::bind_cols( interseccion_agebs |> 
@@ -365,8 +344,7 @@ shinyApp(ui, function(input, output) {
         tiempo_promedio_CLUES_N2=tiempo_promedio_CLUES_N2/n_poligonos_involucrados,
                     )
       
-    print(data_c_geo)
-    ##Estaría chido reutilizar el método de arriba con este polígono nuevo.
+    ##Se reutiliza el método de arriba con este polígono nuevo.
     AccesibilidadPoligono(data_c_geo)
   })
 })

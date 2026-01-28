@@ -99,19 +99,19 @@ AccesibilidadCLUES=function(poligono){
     ((poligono$NOMGEO))
     ,"<br>",
     "<strong>Población Estimada a menos de 10 minutos:</strong> ", 
-    format(round(poligono$POB1T10, 0), big.mark = ","), " habitantes"
+    format(round(poligono$POB1_T10, 0), big.mark = ","), " habitantes"
      ,"<br>",
     "<strong>Población Estimada a menos de 60 minutos:</strong> ", 
-    format(round(poligono$POB1T60, 0), big.mark = ","), " habitantes"
+    format(round(poligono$POB1_T60, 0), big.mark = ","), " habitantes"
      ,"<br>",
     "<strong>Población Afiliada a SS a menos de 10 minutos:</strong> ", 
-    format(round(poligono$SALUD1T10, 0), big.mark = ","), " habitantes"
+    format(round(poligono$SALUD1_T10, 0), big.mark = ","), " habitantes"
      ,"<br>",
     "<strong>Población Afiliada a SS a menos de 60 minutos:</strong> ", 
-    format(round(poligono$SALUD1T60, 0), big.mark = ","), " habitantes"
+    format(round(poligono$SALUD1_T60, 0), big.mark = ","), " habitantes"
      ,"<br>",
-    "<strong>Número de CLUES de nivel 1 a menos de 10 minutos:</strong> ", 
-    format(round(poligono$num_CLUESN1_T10, 1), big.mark = ","), " minutos "
+    "<strong>Número de CLUES de nivel 2 a menos de 10 minutos:</strong> ", 
+    format(round(poligono$num_CLUESN2T10, 1), big.mark = ","), " minutos "
     #  ,"<br>", #########Pendientes
     # "<strong>Tiempo promedio a CLUES de nivel 2 más cercano:</strong> ", 
     # format(round(poligono$tiempo_promedio_CLUES_N2, 1), big.mark = ","), " minutos"
@@ -119,7 +119,7 @@ AccesibilidadCLUES=function(poligono){
     # "<strong>CLUES nivel 2 más cercano: </strong> ", 
     # paste0(poligono$CLUES," - ",poligono$NOMBRE.DE.LA.UNIDAD), ""
   )
-  print(poligono)
+  #print(poligono)
   if(poligono$POB1==0){
     popup_content<-"Asegúrate de que la capa de AGEBs y localidades rurales esté activa y que la región seleccionada por ti contenga al menos uno de ellos"
   }

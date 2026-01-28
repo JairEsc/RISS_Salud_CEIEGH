@@ -21,12 +21,13 @@ clues_fuera_operacion=union_clues |>
 clues_en_operacion_s=union_clues |> 
   dplyr::filter(archivo_origen!="CLUES_202509 (Fuera_Operación)") |> 
   sf::st_as_sf(coords=c('LONGITUD','LATITUD'),crs=4326)
+limites_municipales=st_read("inputs/accesibilidad_SIGEH/hidalgo/LIM_MUNICIPALES.shp")
 
-
+clues_en_operacion_s=clues_en_operacion_s |> st_intersection(limites_municipales |> dplyr::select(geometry) |> st_transform(4326)) 
 ##Aquí va el código para actualizar la tabla en postgres
 clues_en_operacion_s=clues_en_operacion_s |> 
   dplyr::filter(NIVEL.ATENCION!='NO APLICA')
-
+clues_en_operacion_s$NIVEL.ATENCION |> unique()
 #1009+188+2
 
 #st_write(clues_en_operacion_s,dsn = local,layer = "clues_en_operacion",append = F,delete_dsn = T)

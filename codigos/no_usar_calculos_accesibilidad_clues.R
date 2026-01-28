@@ -100,8 +100,7 @@ for(i in 1:nrow(clues_N2)){
 
 ##Vamos a guardar estos datos.
 clues_N2 |> dplyr::relocate(geometry,.after = dplyr::last_col()) |> 
-  st_write("outputs/cluesN2_c_cluesN2_mas_cercano.geojson",driver = "GeoJSON",append = F,delete_dsn = T)
-
+  st_write("outputs/cluesN2_info_accesibilidad.geojson",driver = "GeoJSON",append = F,delete_dsn = T)
 limites_municipales="../../Reutilizables/Cartografia/LIM_MUNICIPALES.shp" |> st_read()
 cluesN1=(clues_en_operacion|> dplyr::filter(NIVEL.ATENCION=='PRIMER NIVEL') |> dplyr::select(CLUES,geometry) |> dplyr::collect() |> 
   dplyr::mutate(geometry=st_as_sfc(geometry)) ) |> st_as_sf()
@@ -131,6 +130,7 @@ for(j in 1:nrow(distancia_entre_cluesN2)){
 }
 cluesN1$CLUESN2_mas_cercana=clues_N2$CLUES[clues_N2_mas_cercanos]# clues_N2_mas_cercanos
 cluesN1$tiempo_promedio_CLUES_N2=tiempos_N2_mas_cercanos
+clues_N2$num_CLUESN1T10=(distancia_entre_cluesN2<10) |> colSums()
 
 #########Agregamos poblaciones 
 cluesN1$num_CLUESN2T10=(distancia_entre_cluesN2<10) |> rowSums()
@@ -158,10 +158,15 @@ for(i in 40:nrow(cluesN1)){
   isocronas_niveles_fijos[is.na(isocronas_niveles_fijos)]=0
   #print(isocronas_niveles_fijos)
   calc_interseccion_cobertura=exactextractr::exact_extract(x = isocronas_niveles_fijos,y = demograficos_scince |> st_transform(32614),'frac')
-  
-  sumas_poblaciones=demograficos_scince |> st_drop_geometry() |> dplyr::mutate(POB1=POB1*calc_interseccion_cobertura$frac_1,
-                                                                               SALUD1=SALUD1*calc_interseccion_cobertura$frac_1
-  ) |> dplyr::group_by(CVEGEO) |> dplyr::summarise(
+  if(ncol(calc_interseccion_cobertura) |> is.null()){
+    filtro_demograficos=demograficos_scince  |> dplyr::filter(st_distance(geometry,cluesN1[i,] |> st_as_sf()) |> as.numeric()<1000)
+  }
+  else{
+    filtro_demograficos=demograficos_scince |> st_drop_geometry() |> dplyr::mutate(POB1=POB1*calc_interseccion_cobertura$frac_1,
+                                                                                   SALUD1=SALUD1*calc_interseccion_cobertura$frac_1
+    )
+  }
+  sumas_poblaciones=filtro_demograficos |> dplyr::group_by(CVEGEO) |> dplyr::summarise(
     POB1=sum(POB1,na.rm=T),
     SALUD1=sum(SALUD1,na.rm=T)
   ) |> 
@@ -180,17 +185,23 @@ for(i in 40:nrow(cluesN1)){
     print(paste0("i=",i))
     print(cluesN1$geometry[i])
     #crop(terra::rast("inputs/rasters/1er_N_Privado_caminando_max_90.tif"))
-    isocronas_niveles_fijos=accCost(T.GC, terra::rast("inputs/rasters/1er_N_Privado_caminando_max_90.tif") |> crop(cluesN1[i,] |> st_as_sf() |> st_buffer(1000) |> st_transform(32614)) |> terra::as.points() |> st_as_sf() |> dplyr::mutate(dist=st_distance(geometry,cluesN1[i,] |> st_as_sf() |> st_buffer(1000) |> st_transform(32614))) |> dplyr::arrange(dplyr::desc(dist)) |> dplyr::slice_head(n=1) |> st_geometry() |> unlist() ) 
+    isocronas_niveles_fijos=accCost(T.GC, terra::rast("inputs/rasters/acces_CLUES_max90.tif") |> crop(cluesN1[i,] |> st_as_sf() |> st_buffer(1000) |> st_transform(32614)) |> terra::as.points() |> st_as_sf() |> dplyr::mutate(dist=st_distance(geometry,cluesN1[i,] |> st_as_sf() |> st_buffer(1000) |> st_transform(32614))) |> dplyr::arrange(dplyr::desc(dist)) |> dplyr::slice_head(n=1) |> st_geometry() |> unlist() ) 
   }
   isocronas_niveles_fijos[isocronas_niveles_fijos>11]=NA
   isocronas_niveles_fijos[!is.na(isocronas_niveles_fijos)]=1
   isocronas_niveles_fijos[is.na(isocronas_niveles_fijos)]=0
   #print(isocronas_niveles_fijos)
   calc_interseccion_cobertura=exactextractr::exact_extract(x = isocronas_niveles_fijos,y = demograficos_scince |> st_transform(32614),'frac')
+  if(ncol(calc_interseccion_cobertura) |> is.null()){
+    filtro_demograficos=demograficos_scince  |> dplyr::filter(st_distance(geometry,cluesN1[i,] |> st_as_sf()) |> as.numeric()<1000)
+  }
+  else{
+    filtro_demograficos=demograficos_scince |> st_drop_geometry() |> dplyr::mutate(POB1=POB1*calc_interseccion_cobertura$frac_1,
+                                                               SALUD1=SALUD1*calc_interseccion_cobertura$frac_1
+    )
+  }
   
-  sumas_poblaciones=demograficos_scince |> st_drop_geometry() |> dplyr::mutate(POB1=POB1*calc_interseccion_cobertura$frac_1,
-                                                                               SALUD1=SALUD1*calc_interseccion_cobertura$frac_1
-  ) |> dplyr::group_by(CVEGEO) |> dplyr::summarise(
+  sumas_poblaciones=filtro_demograficos |> dplyr::group_by(CVEGEO) |> dplyr::summarise(
     POB1=sum(POB1,na.rm=T),
     SALUD1=sum(SALUD1,na.rm=T)
   ) |> 
@@ -204,6 +215,14 @@ for(i in 40:nrow(cluesN1)){
   
 }
 
+##Faltaría nomás calcular el número de CLUESN1 a menos de 10 minutos para cada cluesN1.
+distancia_entre_cluesN1=gdistance::costDistance(T.GC,fromCoords = 
+                                                  matrix(unlist(cluesN1$geometry|> st_transform(32614) ),nrow = nrow(cluesN1)
+                                                         ,ncol = 2,byrow = T)
+                                                ,toCoords = 
+                                                  matrix(unlist(cluesN1$geometry |> st_transform(32614)),nrow = nrow(cluesN1),ncol = 2,byrow = T)
+)
+cluesN1$num_CLUESN1T10=(distancia_entre_cluesN1<10) |> rowSums()
 ##Vamos a guardar estos clues más cercanos
 cluesN1 |> dplyr::relocate(geometry,.after = dplyr::last_col()) |> dplyr::mutate(tiempo_promedio_CLUES_N2=ifelse((tiempo_promedio_CLUES_N2)>400,400,tiempo_promedio_CLUES_N2) ) |> 
-  st_write("outputs/cluesN1_c_cluesN2_mas_cercano.geojson",driver = "GeoJSON",append = F,delete_dsn = T)
+  st_write("outputs/cluesN1_info_accesibilidad.geojson",driver = "GeoJSON",append = F,delete_dsn = T)
