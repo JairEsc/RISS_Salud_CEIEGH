@@ -35,23 +35,64 @@ body {
 }
 
 .map-box {
-    border-radius: 15px;
+    border-radius: 14px;
     border-top: none !important;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.08) !important;
+    box-shadow: 0 8px 30px rgba(2,6,23,0.06) !important;
     overflow: hidden; 
     padding: 0 !important;
 }
 
 .main-sidebar {
-    background-color: #222d32 !important;
-    border-right: 1px solid #eee;
+        background-color: #1f2933 !important;
+        border-right: 1px solid rgba(255,255,255,0.03);
 }
 
 .sidebar-menu li a {
-    border-radius: 0 25px 25px 0;
-    margin-right: 10px;
+        border-radius: 0 20px 20px 0;
+        margin-right: 8px;
+        padding: 12px 14px;
+        color: #e6eef6 !important;
 }
 .checkbox{
   margin-top: 20px;
   margin-bottom: 50px;
+}
+
+.box, .tabBox, .small-box {
+    border-radius: 12px !important;
+    border: 0 !important;
+}
+
+.box .box-header .box-title, .tabBox .nav-tabs li a {
+    font-weight: 600;
+    color: #273142;
+}
+
+.value-box, .small-box {
+    background: linear-gradient(180deg, #ffffff, #fbfdff) !important;
+    border: 1px solid rgba(39,49,66,0.06) !important;
+    box-shadow: 0 6px 18px rgba(3,10,25,0.04) !important;
+    border-radius: 10px !important;
+}
+
+.irs--shiny .irs-bar, .irs--shiny .irs-from, .irs--shiny .irs-to {
+    background: linear-gradient(90deg,#3c8dbc,#2b8bd3) !important;
+    border-radius: 10px !important;
+}
+
+.nav-tabs > li > a {
+    border-radius: 8px !important;
+    margin-right: 6px !important;
+}
+
+.leaflet-control .legend-title {
+    font-weight: 700;
+}
+
+.dataTables_wrapper .dataTables_paginate .paginate_button {
+    background: #fff; border: 1px solid rgba(39,49,66,0.06); border-radius: 6px; color: #273142;
+}
+
+.btn, .btn-default, .btn-primary {
+    border-radius: 8px !important;
 }

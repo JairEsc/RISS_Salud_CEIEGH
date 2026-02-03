@@ -9,7 +9,7 @@ tiempo_zona=accCost(T.GC, matrix(unlist(clues_solicitados$geometry |> st_transfo
 crs(tiempo_zona)=st_crs("EPSG:32614")$wkt
 tiempo_zona[ is.infinite(tiempo_zona)]=200
 tiempo_zona[ (tiempo_zona)>200]=200
-#tiempo_zona[ tiempo_zona>=90]=NA
+tiempo_zona[ tiempo_zona>=200]=NA
 
 puntos_raster <- terra::as.points(terra::rast(tiempo_zona), values = TRUE, na.rm = F)
 puntos_sf <- st_as_sf(puntos_raster)

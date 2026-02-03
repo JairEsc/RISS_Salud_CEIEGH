@@ -38,6 +38,7 @@ source("../../Reutilizables/Postgres_BUIG/conexion_local.R")#Aislar
 source("codigos/SIGEH_isochrone.R")
 source("codigos/definicion_cartografia_demografia.R")
 source("codigos/definicion_custom_markers.R")
+source("codigos/moduleTabStats.R")
 
 
 clues_en_operacion=dplyr::tbl(local,"clues_en_operacion")
@@ -56,29 +57,7 @@ ui <- dashboardPage(
       tags$link(rel = "stylesheet", type = "text/css", href = "custom.css")
     ),
     tags$head(
-      tags$style(HTML("
-    .leaflet-control-layers, .leaflet-control-legend, .info.legend {
-      border: none !important;
-      border-radius: 12px !important; 
-      box-shadow: 0 4px 15px rgba(0,0,0,0.15) !important; 
-      padding: 12px !important;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
-      background: rgba(255, 255, 255, 0.9) !important; 
-      backdrop-filter: blur(5px); 
-    }
-    .legend i {
-      border-radius: 50%; 
-      width: 15px !important;
-      height: 15px !important;
-      margin-right: 10px !important;
-    }
-    .legend-title {
-      font-weight: bold;
-      font-size: 1.1em;
-      margin-bottom: 8px;
-      color: #2c3e50;
-    }
-  "))
+      tags$style(HTML(leaflet_legend_css))
     ),
     
     uiOutput("userpanel"),
@@ -112,14 +91,7 @@ ui <- dashboardPage(
                 )
               )
       ),
-      tabItem(tabName = "stats",
-              fluidRow(
-                box(width = 12, class = "map-box",
-                    renderText({"Text"})
-                    
-                )
-              )
-      )
+      tabStatsUI("tab_stats")
     )
   )
 )
@@ -127,6 +99,28 @@ ui <- dashboardPage(
 shinyApp(ui, function(input, output) {
   ###Lista de valores reactivos utilizables
   clues_solicitadosss=reactiveValues(df=NULL)
+  # Simple startup prefetch to speed first interaction (minimal change)
+  raster_cache <- new.env(parent = emptyenv())
+  try({
+    init_level <- isolate(input$nivel_at)
+    # prefetch clues table for initial level
+    pref <- tryCatch({
+      clues_en_operacion |> dplyr::filter(NIVEL.ATENCION==init_level | init_level=="CUALQUIER NIVEL") |>
+        dplyr::select(CLUES,MUNICIPIO,LOCALIDAD,NOMBRE.DE.LA.UNIDAD,NIVEL.ATENCION,CLUESN2_mas_cercana:num_CLUESN1T10,geometry) |>
+        dplyr::collect() |>
+        dplyr::mutate(geometry=st_as_sfc(geometry)) |> st_as_sf()
+    }, error = function(e) NULL)
+    if(!is.null(pref)) clues_solicitadosss$df <- pref
+    # preload raster for initial level
+    raster_cache$tiempo_zona <- tryCatch({
+      switch (init_level,
+              "PRIMER NIVEL" = raster("inputs/rasters/acces_CLUESN1_max90.tif"),
+              "SEGUNDO NIVEL" = raster("inputs/rasters/acces_CLUESN2_max90.tif"),
+              "TERCER NIVEL" = raster("inputs/rasters/acces_CLUESN3_max90.tif"),
+              "CUALQUIER NIVEL" = raster("inputs/rasters/acces_CLUES_max90.tif")
+      )
+    }, error = function(e) NULL)
+  })
   output$mapa_principal=renderLeaflet({
     #Mapa con tiles por defecto y barra de herramientas para dibujar polígonos
     leaflet() |> addTiles() |> 
@@ -359,6 +353,7 @@ shinyApp(ui, function(input, output) {
     ##Se reutiliza el método de arriba con este polígono nuevo.
     AccesibilidadPoligono(data_c_geo)
   })
+  tabStatsServer("tab_stats",nivel_at = reactive(input$nivel_at))##Ya la tenía "independiente", así que aproveché para consumirla como un módulo
 })
 
 #shiny::runApp("app.R",host = "0.0.0.0", port = 80)

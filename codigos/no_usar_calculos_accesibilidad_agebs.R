@@ -9,28 +9,60 @@ cluesN1=(clues_en_operacion|> dplyr::filter(NIVEL.ATENCION=='PRIMER NIVEL') |> d
 cluesN1=cluesN1 |> st_intersection(limites_municipales |> st_transform(4326)) |> dplyr::select(CLUES,geometry)
 
 tiempo_zona=accCost(T.GC, matrix(cluesN1$geometry|> st_transform(st_crs("EPSG:32614") ) |> unlist() ,nrow = nrow(cluesN1),ncol = 2,byrow = T))
-tiempo_zona[ is.infinite(tiempo_zona)]=200
-tiempo_zona[ (tiempo_zona)>200]=200
-
-calc_interseccion_cobertura=exactextractr::exact_extract(x = tiempo_zona ,y = demograficos_scince |> st_transform(32614),'mean')
+crs(tiempo_zona)=st_crs("EPSG:32614")$wkt
+tiempo_zona[ is.infinite(tiempo_zona)]=NA
+tiempo_zona[ (tiempo_zona)>120]=NA
+for(i in 1:100){
+  tiempo_zona=focal(tiempo_zona, w =matriz_revision, fun = function(x) {if (all(is.na(x))) NA else mean(x, na.rm = TRUE)} , na.policy = "only")
+  #inflamos hasta que cubra a los agebs.
+  calc_interseccion_cobertura=exactextractr::exact_extract(x = tiempo_zona ,y = demograficos_scince |> st_transform(32614),'mean')
+  if((is.nan(calc_interseccion_cobertura) |> sum() )==0){
+    print(i)#i=
+    break
+  }
+}
+# leaflet() |> addTiles() |> addPolygons(data=demograficos_scince) |>
+#   addRasterImage(projectRasterForLeaflet(tiempo_zona,method = "ngb"),colors = "Spectral",opacity = 0.4,group = "Accesibilidad en minutos")
+#calc_interseccion_cobertura=exactextractr::exact_extract(x = tiempo_zona ,y = demograficos_scince |> st_transform(32614),'mean')
 demograficos_scince$tiempo_promedio_CLUES_N1=calc_interseccion_cobertura
 
 cluesN2=(clues_en_operacion|> dplyr::filter(NIVEL.ATENCION=='SEGUNDO NIVEL') |> dplyr::select(CLUES,geometry) |> dplyr::collect() |> 
            dplyr::mutate(geometry=st_as_sfc(geometry)) ) |> st_as_sf()
 tiempo_zona=accCost(T.GC, matrix(cluesN2$geometry|> st_transform(st_crs("EPSG:32614") ) |> unlist() ,nrow = nrow(cluesN2),ncol = 2,byrow = T))
-tiempo_zona[ is.infinite(tiempo_zona)]=200
-tiempo_zona[ (tiempo_zona)>200]=200
+crs(tiempo_zona)=st_crs("EPSG:32614")$wkt
+tiempo_zona[ is.infinite(tiempo_zona)]=NA
+tiempo_zona[ (tiempo_zona)>240]=NA
+plot(tiempo_zona)
+for(i in 1:100){
+  tiempo_zona=focal(tiempo_zona, w =matriz_revision, fun = function(x) {if (all(is.na(x))) NA else mean(x, na.rm = TRUE)} , na.policy = "only")
+  #inflamos hasta que cubra a los agebs.
+  calc_interseccion_cobertura=exactextractr::exact_extract(x = tiempo_zona ,y = demograficos_scince |> st_transform(32614),'mean')
+  if((is.nan(calc_interseccion_cobertura) |> sum() )==0){
+    print(i)#i=
+    break
+  }
+}
 
-calc_interseccion_cobertura=exactextractr::exact_extract(x = tiempo_zona ,y = demograficos_scince |> st_transform(32614),'mean')
+#calc_interseccion_cobertura=exactextractr::exact_extract(x = tiempo_zona ,y = demograficos_scince |> st_transform(32614),'mean')
 demograficos_scince$tiempo_promedio_CLUES_N2=calc_interseccion_cobertura
 
 cluesN=(clues_en_operacion |> dplyr::select(CLUES,geometry) |> dplyr::collect() |> 
            dplyr::mutate(geometry=st_as_sfc(geometry)) ) |> st_as_sf()|> st_intersection(limites_municipales |> st_transform(4326)) |> dplyr::select(CLUES,geometry)
 tiempo_zona=accCost(T.GC, matrix(cluesN$geometry|> st_transform(st_crs("EPSG:32614") ) |> unlist() ,nrow = nrow(cluesN),ncol = 2,byrow = T))
-tiempo_zona[ is.infinite(tiempo_zona)]=200
-tiempo_zona[ (tiempo_zona)>200]=200
-
-calc_interseccion_cobertura=exactextractr::exact_extract(x = tiempo_zona ,y = demograficos_scince |> st_transform(32614),'mean')
+crs(tiempo_zona)=st_crs("EPSG:32614")$wkt
+tiempo_zona[ is.infinite(tiempo_zona)]=NA
+tiempo_zona[ (tiempo_zona)>120]=NA
+plot(tiempo_zona)
+for(i in 1:100){
+  tiempo_zona=focal(tiempo_zona, w =matriz_revision, fun = function(x) {if (all(is.na(x))) NA else mean(x, na.rm = TRUE)} , na.policy = "only")
+  #inflamos hasta que cubra a los agebs.
+  calc_interseccion_cobertura=exactextractr::exact_extract(x = tiempo_zona ,y = demograficos_scince |> st_transform(32614),'mean')
+  if((is.nan(calc_interseccion_cobertura) |> sum() )==0){
+    print(i)#i=
+    break
+  }
+}
+#calc_interseccion_cobertura=exactextractr::exact_extract(x = tiempo_zona ,y = demograficos_scince |> st_transform(32614),'mean')
 demograficos_scince$tiempo_promedio_CLUES=calc_interseccion_cobertura
 
 

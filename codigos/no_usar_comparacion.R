@@ -13,7 +13,7 @@ T2=c(50,100,150,200)
 
 #Calculo de isocronas
   #osm
-iso1_osm=punto_referencia_fijo |> osrmIsochrone(breaks = T1,res = 50,##Resolucion de OSM. 100 es el máximo pero tarda como 5 minutos
+iso1_osm=punto_referencia_fijo |> osrmIsochrone(breaks = T1,res = 30,##Resolucion de OSM. 100 es el máximo pero tarda como 5 minutos
                                                 osrm.profile = "car")
 #plot(iso1_osm)
   #mapbox
