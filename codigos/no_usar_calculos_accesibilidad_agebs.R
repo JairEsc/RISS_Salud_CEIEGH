@@ -1,5 +1,6 @@
 ##Documentamos el cálculo de opciones N1 y N2 para cada AGEB
-demograficos_scince=st_read("outputs/demograficos_cartograficos_scince_20.geojson")
+demograficos_scince=st_read("outputs/demograficos_info_accesibilidad_cluesN1.geojson")
+demograficos_scince=demograficos_scince[!(demograficos_scince$CVEGEO |> duplicated()),]##Error mío. Interrumpí un proceso y luego lo reinicié sin borrar los registros anteriores.
 
 
 limites_municipales="../../Reutilizables/Cartografia/LIM_MUNICIPALES.shp" |> st_read()
@@ -53,7 +54,9 @@ demograficos_scince=demograficos_scince |> dplyr::mutate(tiempo_promedio_CLUES_c
 clues_solicitados=clues_en_operacion |> dplyr::filter(NIVEL.ATENCION=="SEGUNDO NIVEL") |> 
   dplyr::select(geometry,CLUES,NOMBRE.DE.LA.UNIDAD) |> dplyr::collect() |> 
   dplyr::mutate(geometry=st_as_sfc(geometry))
-demograficos_scince=demograficos_scince |> st_join(clues_solicitados |> st_as_sf(),join = st_nearest_feature)
+#demograficos_scince=demograficos_scince |> st_join(clues_solicitados |> st_as_sf(),join = st_nearest_feature)
 
 demograficos_scince |> dplyr::relocate(geometry,.after = dplyr::last_col()) |> 
-  st_write("outputs/demograficos_info_accesibilidad.geojson",driver='GeoJSON',append=F,delete_dsn = T)
+  st_write("outputs/demograficos_info_accesibilidad_provisional.geojson",driver='GeoJSON',append=F,delete_dsn = T)
+demograficos_scince1=st_read("outputs/demograficos_info_accesibilidad.geojson")
+demograficos_scince2=st_read("outputs/demograficos_info_accesibilidad_provisional.geojson")##El provisional está más completo

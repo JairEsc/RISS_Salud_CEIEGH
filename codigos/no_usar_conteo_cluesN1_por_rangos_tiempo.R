@@ -1,4 +1,4 @@
-demograficos_scince =st_read("outputs/demograficos_cartograficos_scince_20_c_accesibilidad_c_CLUES2_nearest.geojson")
+demograficos_scince =st_read("outputs/demograficos_cartograficos_scince_20.geojson")
 
 clues_en_operacion=dplyr::tbl(local,"clues_en_operacion")
 clues_solicitados=clues_en_operacion |> dplyr::filter(NIVEL.ATENCION=="PRIMER NIVEL") |> dplyr::select(geometry) |> dplyr::collect() |> 
@@ -48,9 +48,9 @@ for(cve_unica in unique(resultado$CVEGEO)){
     num_clues_a_menos_de_60
   )
 }
-
-demograficos_scince=demograficos_scince |> merge(conteo_clues_N1_por_ageb,by='CVEGEO',all.x=T)
+conteo_clues_N1_por_ageb=read.csv("outputs/checar_chamba_pesada.csv")
+demograficos_scince=demograficos_scince |> merge(conteo_clues_N1_por_ageb[((5947-5863+1):5947),],by='CVEGEO',all.x=T)
 demograficos_scince |> dplyr::relocate(geometry,.after = dplyr::last_col()) |> 
-  st_write("outputs/demograficos_info_accesibilidad_clues",driver='GeoJSON',append=F,delete_dsn = T)
+  sf::st_write("outputs/demograficos_info_accesibilidad_cluesN1.geojson",driver='GeoJSON',append=F,delete_dsn = T)
 
-demograficos_c_opciones_CLUES=st_read("outputs/demograficos_cartograficos_scince_20_c_accesibilidad_c_CLUES2_nearest_c_num_CLUESN2_N1.geojson")
+demograficos_c_opciones_CLUES=sf::st_read("outputs/demograficos_info_accesibilidad_cluesN1_revisar.geojson")

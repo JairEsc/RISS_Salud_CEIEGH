@@ -27,8 +27,8 @@ getIsochrones_mapbox=function(coord,times=c(5,15,25,35)){
   return(isochrones_sf)
 }
 ##################################################
-
-
+#Pendiente#
+#Cuando la información censal esn confidencial (-6 o -8), modificar el formato para reflejarlo
 AccesibilidadPoligono=function(poligono){
   centroide=st_centroid(poligono)
   print("centroide:")
@@ -77,8 +77,8 @@ AccesibilidadPoligono=function(poligono){
   return(0)
 
 }
-AccesibilidadCLUES=function(poligono){
-  centroide=st_centroid(poligono)
+AccesibilidadCLUES=function(poligono,centro){
+  centroide=centro
   ##Clave, Nombre de unidad, Nombre de localidad donde se ubica, Nombre de municipio donde se ubica
   #Pob Total en rango de 10 minutos 
   #Pob Total afiliada en rango de 10 minutos 
@@ -93,10 +93,10 @@ AccesibilidadCLUES=function(poligono){
     ((poligono$CLUES))
     ,"<br>",
     "<strong>Municipio:</strong> ", 
-    ((poligono$NOM_MUN))
+    ((poligono$MUNICIPIO))
     ,"<br>",
     "<strong>Localidad:</strong> ", 
-    ((poligono$NOMGEO))
+    ((poligono$LOCALIDAD))
     ,"<br>",
     "<strong>Población Estimada a menos de 10 minutos:</strong> ", 
     format(round(poligono$POB1_T10, 0), big.mark = ","), " habitantes"
@@ -120,9 +120,6 @@ AccesibilidadCLUES=function(poligono){
     # paste0(poligono$CLUES," - ",poligono$NOMBRE.DE.LA.UNIDAD), ""
   )
   #print(poligono)
-  if(poligono$POB1==0){
-    popup_content<-"Asegúrate de que la capa de AGEBs y localidades rurales esté activa y que la región seleccionada por ti contenga al menos uno de ellos"
-  }
   coords <- sf::st_coordinates(centroide)
   leaflet::leafletProxy("mapa_principal") |> 
     leaflet::addPopups(

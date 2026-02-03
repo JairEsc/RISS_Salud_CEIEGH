@@ -34,7 +34,8 @@ addMarkers_custom = function(proxy, data) {
                                                           maxClusterRadius = 
                                                             htmlwidgets::JS(funcion_js
                                                             )
-    ) 
+    ), 
+    layerId = paste0('CLUES',1:nrow(data))
   ) |> 
     addSearchFeatures(targetGroups = "CLUES")
 

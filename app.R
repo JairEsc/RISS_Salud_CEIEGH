@@ -111,12 +111,22 @@ ui <- dashboardPage(
                     leafletOutput("mapa_principal", width = "100%", height = "80vh")
                 )
               )
+      ),
+      tabItem(tabName = "stats",
+              fluidRow(
+                box(width = 12, class = "map-box",
+                    renderText({"Text"})
+                    
+                )
+              )
       )
     )
   )
 )
 
 shinyApp(ui, function(input, output) {
+  ###Lista de valores reactivos utilizables
+  clues_solicitadosss=reactiveValues(df=NULL)
   output$mapa_principal=renderLeaflet({
     #Mapa con tiles por defecto y barra de herramientas para dibujar polígonos
     leaflet() |> addTiles() |> 
@@ -135,10 +145,11 @@ shinyApp(ui, function(input, output) {
   input_nivel_at_d=input_nivel_at |> debounce(1000)
   observeEvent(input_nivel_at_d(),
     {
-      #print(paste0("Nivel de atencion seleccionado: ", input$nivel_at))
-      clues_solicitados=clues_en_operacion |> dplyr::filter(NIVEL.ATENCION==input$nivel_at | input$nivel_at=="CUALQUIER NIVEL" ) |> dplyr::select(CLUES,NOMBRE.DE.LA.UNIDAD,NIVEL.ATENCION,geometry) |> dplyr::collect() |> 
+      clues_solicitados=clues_en_operacion |> dplyr::filter(NIVEL.ATENCION==input$nivel_at | input$nivel_at=="CUALQUIER NIVEL" ) |> 
+        dplyr::select(CLUES,MUNICIPIO,LOCALIDAD,NOMBRE.DE.LA.UNIDAD,NIVEL.ATENCION,CLUESN2_mas_cercana:num_CLUESN1T10,geometry) |>
+        dplyr::collect() |> 
         dplyr::mutate(geometry=st_as_sfc(geometry)) |> st_as_sf()
-      
+      clues_solicitadosss$df=clues_solicitados
       showNotification(paste0(nrow(clues_solicitados)," CLUES de ",stringr::str_to_lower(input$nivel_at)) )
       tiempo_zona=switch (input$nivel_at,
                           "PRIMER NIVEL" = raster("inputs/rasters/acces_CLUESN1_max90.tif"),
@@ -154,7 +165,6 @@ shinyApp(ui, function(input, output) {
         removeShape(layerId = paste0("Isocronas",1:nrow(iso1_sigeh))) |> 
         removeControl(layerId = "Accesibilidad en minutos2") |>
         addMarkers_custom(data = clues_solicitados) |> 
-        #addMarkers(data=clues_solicitados,label =paste0(clues_solicitados$CLUES,"-",clues_solicitados$NOMBRE.DE.LA.UNIDAD) ,group = "CLUES",clusterOptions = markerClusterOptions(removeOutsideVisibleBounds = T)) |>
         addRasterImage(projectRasterForLeaflet(tiempo_zona,method = "ngb"),colors = "Spectral",group = "Accesibilidad en minutos") |> 
         addPolylines(data=iso1_sigeh  ,
                      color=paleta_spectral_comun(iso1_sigeh$level |> as.numeric()),opacity = 1,group = "Isocronas",layerId = paste0("Isocronas",1:nrow(iso1_sigeh))) |>
@@ -188,6 +198,8 @@ shinyApp(ui, function(input, output) {
   lista_objetos_especiales <- reactiveVal(value = 0)##Especiales son los que se dibujan. No necesito la lista, nomás saber si está vacía
   
   observeEvent(input$mapa_principal_marker_click,{#2
+    datos_del_clues=clues_solicitadosss$df |> 
+      dplyr::filter(dplyr::row_number() == as.numeric(gsub("CLUES","",input$mapa_principal_marker_click$id) )) 
     punto_referencia_fijo=st_point(c(input$mapa_principal_marker_click$lng ,input$mapa_principal_marker_click$lat)) |> st_sfc(crs = 4326)
     #isocronas_niveles_fijos=getIsochrones_mapbox(coord = punto_referencia_fijo |> unlist() |> paste(collapse = ","),
     #                                             times =c(10,20,40,60) ) |> st_as_sf() |> st_transform(st_crs("EPSG:4326"))
@@ -205,8 +217,8 @@ shinyApp(ui, function(input, output) {
       # Creamos una secuencia de radios
       radios <- seq(100, 2500, by = 300)
       circulos <- do.call(rbind, lapply(radios, function(r) {
-        st_buffer(punto_proyectado, dist = r) |> 
-          mutate(level = as.character(r / 10))
+        st_buffer(punto_proyectado, dist = r) |> st_as_sf() |> 
+          dplyr::mutate(level = as.character(r / 30))
       }))
       
       return(circulos)
@@ -229,8 +241,8 @@ shinyApp(ui, function(input, output) {
     ##Cuando se agregue una capa de dibujo se prende el botoncito para borrar. Cuando se limpie todo, se descolorea. 
     ##leaflet-draw-edit-remove
     lista_objetos_especiales(1)
-    
-    AccesibilidadCLUES(poligono = isocronas_niveles_fijos[1,])
+    #print(isocronas_niveles_fijos[1,] |> cbind(datos_del_clues |> st_drop_geometry()))
+    AccesibilidadCLUES(poligono = isocronas_niveles_fijos[1,] |> cbind(datos_del_clues |> st_drop_geometry()),centro=punto_referencia_fijo)
     ##Al final no estuvo tan chido el mapbox. Da más problemas que soluciones. 
     ##Mejor calcularlo con accesibilidad sigeh y agregar datos de cobertura (pendiente)
   })
