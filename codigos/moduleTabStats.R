@@ -97,7 +97,8 @@ tabStatsServer <- function(id, nivel_at) {
         m <- m |> addPolygons(data = capa_sf,
                               fillColor = pal(capa_sf$POB_rel),
                               color = pal(capa_sf$POB_rel), weight = 5,
-                              label = ~paste0("CVEGEO: ", CVEGEO, " (", POB_rel, "%)")
+                              label = ~paste0("CVEGEO: ", CVEGEO, " (", POB_rel, "%)"),
+                              popup = lst[[4]]
         )
       }
       m
@@ -114,7 +115,8 @@ tabStatsServer <- function(id, nivel_at) {
         addPolygons(data = capa_sf,
                     fillColor =pal(capa_sf$POB_rel),
                     color=pal(capa_sf$POB_rel),weight = 5,
-                    label = ~paste0("CVEGEO: ", capa_sf$CVEGEO, " (", capa_sf$POB_rel, "%)")
+                    label = ~paste0("CVEGEO: ", capa_sf$CVEGEO, " (", capa_sf$POB_rel, "%)"),
+                    popup = listas_estadisticas()[[4]]
         )
       #Agregar clues?
     })

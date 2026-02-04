@@ -28,6 +28,7 @@ library(sf)
 library(raster)
 library(shinydashboard)
 library(shinydashboardPlus)
+library(DT)
 
 #source("codigos/csv_to_geojson.R")
 source("codigos/token_mapbox.R")
@@ -39,7 +40,7 @@ source("codigos/SIGEH_isochrone.R")
 source("codigos/definicion_cartografia_demografia.R")
 source("codigos/definicion_custom_markers.R")
 source("codigos/moduleTabStats.R")
-
+source("codigos/extras_css.R")
 
 clues_en_operacion=dplyr::tbl(local,"clues_en_operacion")
 # 

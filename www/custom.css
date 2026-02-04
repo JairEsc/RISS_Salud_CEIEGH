@@ -73,6 +73,7 @@ body {
     border: 1px solid rgba(39,49,66,0.06) !important;
     box-shadow: 0 6px 18px rgba(3,10,25,0.04) !important;
     border-radius: 10px !important;
+    color: 'slateGray' !important;
 }
 
 .irs--shiny .irs-bar, .irs--shiny .irs-from, .irs--shiny .irs-to {
