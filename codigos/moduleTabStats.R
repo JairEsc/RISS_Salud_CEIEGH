@@ -5,7 +5,7 @@ tabStatsUI=function(id){
             tags$style(HTML(sliderInputTiempoCss)),
             div(class = "slider-filter-container",
               sliderInput(ns("sliderTiempo"),width = '60%',min = 0,max = 180,value = 58,
-                          label = "Seleccionar umbral inferior para la distancia en tiempo al CLUES más cercano."),
+                          label = "Seleccionar tiempo mínimo requerido (en minutos) para llegar al CLUES más cercano"),
                 div(class = "slider-filter-note",
                 span(class = "filter-note-icon", icon("exclamation-triangle")),
                 span("Filtra localidades donde el tiempo promedio a un CLUES es ", tags$b("mayor"), " al tiempo seleccionado")
@@ -19,7 +19,7 @@ tabStatsUI=function(id){
           ),
           fluidRow(
             column(width = 7,
-                     box(width = NULL, title = "AGEBs y localidades rurales con accesibilidad deficiente", status = "primary", solidHeader = TRUE,
+                     box(width = NULL, title = "AGEBs y localidades rurales con tiempo promedio de llegada al CLUES más cercano mayor al tiempo seleccionado", status = "primary", solidHeader = TRUE,
                leafletOutput(ns("mapa_stats"), height = "55vh")
                      )
             ),
@@ -127,8 +127,8 @@ tabStatsServer <- function(id, nivel_at) {
       if(!is.null(capa_sf) && nrow(capa_sf) > 0){
         pal <- colorNumeric(palette = "YlOrRd", domain = c(0, max(c(0, max(capa_sf$POB_rel, na.rm = TRUE)))))
         m <- m |> addPolygons(data = capa_sf,
-                              fillColor = pal(capa_sf$POB_rel),
-                              color = pal(capa_sf$POB_rel), weight = 5,
+                              fillColor = pal(capa_sf$POB_rel),fillOpacity = 0.9,
+                              color = pal(capa_sf$POB_rel), weight = 7,opacity = 1,
                               label = ~paste0("CVEGEO: ", CVEGEO, " (", POB_rel, "%)"),
                               popup = lst[[4]]
         )
@@ -145,8 +145,8 @@ tabStatsServer <- function(id, nivel_at) {
       leafletProxy("mapa_stats", session = session) |>
         clearShapes() |>
         addPolygons(data = capa_sf,
-                    fillColor =pal(capa_sf$POB_rel),
-                    color=pal(capa_sf$POB_rel),weight = 5,
+                    fillColor =pal(capa_sf$POB_rel),fillOpacity = 0.9,
+                    color=pal(capa_sf$POB_rel),weight = 7,opacity = 1,
                     label = ~paste0("CVEGEO: ", capa_sf$CVEGEO, " (", capa_sf$POB_rel, "%)"),
                     popup = listas_estadisticas()[[4]]
         )

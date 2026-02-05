@@ -99,6 +99,18 @@ sliderInputTiempoCss=
                 margin-right: 8px;
                 font-size: 14px;
               }
+              .irs--shiny .irs-single{
+              background-color:#006657 !important;
+              }
+              .irs--shiny .irs-bar, .irs--shiny .irs-from, .irs--shiny .irs-to{
+              background: linear-gradient(90deg, rgb(0, 102, 87), rgb(0, 110, 90)) !important;
+              }
+              .box.box-solid.box-primary > .box-header {
+              background:#006657 !important;
+              }
+              .nav-tabs-custom>.nav-tabs>li.active{
+              border-top-color:#006657 !important
+              }
               
             "
 funcionColorearBotonBorrar=function(string){
