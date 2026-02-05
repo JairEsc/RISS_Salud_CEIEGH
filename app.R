@@ -8,7 +8,7 @@
 #Se calcula la accesibilidad (se puede optimizar el cálculo de accesibilidad si pre-cargamos los puntos)
 
 #En el mapa principal se agregan AGEBs. La elección de las clues define una repartición de población de AGEBs entre las clues a accesibilidad digna
-###Coneval: tiempos promedio de traslado: https://www.coneval.org.mx/Informes/Evaluacion/Impacto/Acceso%20y%20Uso%20Efectivo.pdf (58 minutos)
+###Coneval: tiempos promedio de traslado: https://www.coneval.org.mx/Informes/Evaluacion/Impacto/Acceso%20y%20Uso%20Efectivo.pdf (58 minutos es el indicador de tiempo estimado de traslado en caso de presentarse una emergencia Fuente: Elaboración del CONEVAL con datos del MCS-ENIGH 2008 y 2010.)
 ###Viene desagregado por tipo de afiliación, btw.
 
 #Propuesta: Un click sobre un clues dibuja la isocrona a niveles fijos. Que en teoría es consistente con la accesibilidad del sigeh
@@ -21,6 +21,7 @@
           #Conteo del número de clues por rango de tiempo
 
 library(shiny)
+library(shinybusy)
 library(bslib)
 library(leaflet)
 library(leaflet.extras)
@@ -28,20 +29,24 @@ library(sf)
 library(raster)
 library(shinydashboard)
 library(shinydashboardPlus)
-
+library(DT)
+library(rintrojs)
+library(dbplyr)
 #source("codigos/csv_to_geojson.R")
-source("codigos/token_mapbox.R")
+#source("codigos/token_mapbox.R")#Ya no se usa
 source("codigos/funciones.R")
-source("../../Reutilizables/Postgres_BUIG/conexion_local.R")#Aislar
+#source("../../Reutilizables/Postgres_BUIG/conexion_local.R")#Aislar
 ##Ya está aislada en supabase. Para leerla de texto a hexadecimal:
 #clues_en_operacion |> dplyr::select(CLUES,geometry) |> dplyr::collect() |> dplyr::mutate(geometry= sf::st_as_sfc(structure(geometry,class = "WKB" ),EWKB=T))
 source("codigos/SIGEH_isochrone.R")
 source("codigos/definicion_cartografia_demografia.R")
 source("codigos/definicion_custom_markers.R")
-
-
+source("codigos/moduleTabStats.R")
+source("codigos/extras_css.R")
+local=DBI::dbConnect(RSQLite::SQLite(), "clues_en_operacion_y_limites_municipales.sqlite")
 clues_en_operacion=dplyr::tbl(local,"clues_en_operacion")
-# 
+limites_municipales=sf::st_read(local,"limite_municipal")
+
 paleta_spectral_comun=colorNumeric(palette = "Spectral",domain = c(10,20,40,60,90))
 
 #demograficos_scince proviene de definicion_cartografia_demografia
@@ -56,77 +61,84 @@ ui <- dashboardPage(
       tags$link(rel = "stylesheet", type = "text/css", href = "custom.css")
     ),
     tags$head(
-      tags$style(HTML("
-    .leaflet-control-layers, .leaflet-control-legend, .info.legend {
-      border: none !important;
-      border-radius: 12px !important; 
-      box-shadow: 0 4px 15px rgba(0,0,0,0.15) !important; 
-      padding: 12px !important;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
-      background: rgba(255, 255, 255, 0.9) !important; 
-      backdrop-filter: blur(5px); 
-    }
-    .legend i {
-      border-radius: 50%; 
-      width: 15px !important;
-      height: 15px !important;
-      margin-right: 10px !important;
-    }
-    .legend-title {
-      font-weight: bold;
-      font-size: 1.1em;
-      margin-bottom: 8px;
-      color: #2c3e50;
-    }
-  "))
+      tags$style(HTML(leaflet_legend_css))
     ),
-    
+    tags$head(
+      tags$style(HTML(sidebar_last_child_css))),
     uiOutput("userpanel"),
     
     div(class = "sidebar-controls",
-        selectInput("nivel_at",
-                    label = "Nivel de atención", 
-                    choices = c("1er nivel" = "PRIMER NIVEL",
-                                "2do nivel" = "SEGUNDO NIVEL",
-                                "3er nivel" = "TERCER NIVEL",
-                                "Todos los niveles"='CUALQUIER NIVEL'),##Todos los niveles?
-                    selectize = TRUE,selected ="SEGUNDO NIVEL" )
+        introBox(id = "tour_step_2_nivel", data.step = 1, data.intro = "placeholder",
+          selectInput("nivel_at",
+                      label = "Nivel de atención", 
+                      choices = c("1er nivel" = "PRIMER NIVEL",
+                                  "2do nivel" = "SEGUNDO NIVEL",
+                                  "3er nivel" = "TERCER NIVEL",
+                                  "Todos los niveles"='CUALQUIER NIVEL'),##Todos los niveles?
+                      selectize = TRUE,selected ="SEGUNDO NIVEL" )
+        )
     )
     ,shinyjs::useShinyjs(),
     
-    checkboxInput(inputId = "agebs",label = "AGEBs y localidades rurales",value = F),
+        
     
+    tags$style(HTML(tour_button_css)),
     sidebarMenu(
       menuItem("Mapa Principal", tabName = "map", icon = icon("map-marked-alt")),
-      menuItem("Estadísticas", tabName = "stats", icon = icon("chart-bar"))
+      introBox(id = "tour_step_3_agebs", data.step = 2, data.intro = "placeholder",
+               checkboxInput(inputId = "agebs",label = "AGEBs y localidades rurales",value = F)
+      ),
+      menuItem("Estadísticas", tabName = "stats", icon = icon("chart-bar")),
+      div(style = "padding: 10px;",
+          actionButton("start_tour", "Explicación", class="btn-primary", width="100%",, icon = icon("question-circle"))
+      )
     )
     ,collapsed = F,minified = F
   ),
   
   dashboardBody(
+    introjsUI(),##Para el Tour
     tabItems(
       tabItem(tabName = "map",
               fluidRow(
-                box(width = 12, class = "map-box",
-                    leafletOutput("mapa_principal", width = "100%", height = "80vh")
+                introBox(id = "tour_step_1_map", data.step = 3, data.intro = "placeholder",
+                  box(width = 12, class = "map-box",
+                    leafletOutput("mapa_principal", width = "100%", height = "80vh"),
+                    add_busy_spinner(spin = "cube-grid")
+                  )
                 )
               )
       ),
-      tabItem(tabName = "stats",
-              fluidRow(
-                box(width = 12, class = "map-box",
-                    renderText({"Text"})
-                    
-                )
-              )
-      )
+      tabStatsUI("tab_stats")
     )
   )
 )
 
-shinyApp(ui, function(input, output) {
+shinyApp(ui, function(input, output,session) {
   ###Lista de valores reactivos utilizables
   clues_solicitadosss=reactiveValues(df=NULL)
+  # Simple startup prefetch to speed first interaction (minimal change)
+  raster_cache <- new.env(parent = emptyenv())
+  try({
+    init_level <- isolate(input$nivel_at)
+    # prefetch clues table for initial level
+    pref <- tryCatch({
+      clues_en_operacion |> dplyr::filter(NIVEL.ATENCION==init_level | init_level=="CUALQUIER NIVEL") |>
+        dplyr::select(CLUES,MUNICIPIO,LOCALIDAD,NOMBRE.DE.LA.UNIDAD,NIVEL.ATENCION,CLUESN2_mas_cercana:num_CLUESN1T10,geometry) |>
+        dplyr::collect() |>
+        dplyr::mutate(geometry= sf::st_as_sfc(structure(geometry,class = "WKB" ),EWKB=T)) |> st_as_sf()
+    }, error = function(e) NULL)
+    if(!is.null(pref)) clues_solicitadosss$df <- pref
+    # preload raster for initial level
+    raster_cache$tiempo_zona <- tryCatch({
+      switch (init_level,
+              "PRIMER NIVEL" = raster("inputs/rasters/acces_CLUESN1_max90.tif"),
+              "SEGUNDO NIVEL" = raster("inputs/rasters/acces_CLUESN2_max90.tif"),
+              "TERCER NIVEL" = raster("inputs/rasters/acces_CLUESN3_max90.tif"),
+              "CUALQUIER NIVEL" = raster("inputs/rasters/acces_CLUES_max90.tif")
+      )
+    }, error = function(e) NULL)
+  })
   output$mapa_principal=renderLeaflet({
     #Mapa con tiles por defecto y barra de herramientas para dibujar polígonos
     leaflet() |> addTiles() |> 
@@ -136,7 +148,9 @@ shinyApp(ui, function(input, output) {
                                      polylineOptions =F,circleOptions = F,
                                      rectangleOptions = F,markerOptions = F,
                                      circleMarkerOptions = F,
-                                     editOptions = editToolbarOptions(edit = T,remove = T,allowIntersection = F)) 
+                                     editOptions = editToolbarOptions(edit = F,remove = T,allowIntersection = F)) |> 
+      addPolygons(data=limites_municipales,color = "black",weight = 1,fillColor = "lightgray",opacity = 0.7,fillOpacity = 0.1,
+                  label=paste0("Municipio:" ,limites_municipales$NOM_MUN),group='municipios')
   })
   #Agregamos el select (nivel de atencion) con debounce
   input_nivel_at=reactive({
@@ -148,7 +162,7 @@ shinyApp(ui, function(input, output) {
       clues_solicitados=clues_en_operacion |> dplyr::filter(NIVEL.ATENCION==input$nivel_at | input$nivel_at=="CUALQUIER NIVEL" ) |> 
         dplyr::select(CLUES,MUNICIPIO,LOCALIDAD,NOMBRE.DE.LA.UNIDAD,NIVEL.ATENCION,CLUESN2_mas_cercana:num_CLUESN1T10,geometry) |>
         dplyr::collect() |> 
-        dplyr::mutate(geometry=st_as_sfc(geometry)) |> st_as_sf()
+        dplyr::mutate(geometry= sf::st_as_sfc(structure(geometry,class = "WKB" ),EWKB=T)) |> st_as_sf()
       clues_solicitadosss$df=clues_solicitados
       showNotification(paste0(nrow(clues_solicitados)," CLUES de ",stringr::str_to_lower(input$nivel_at)) )
       tiempo_zona=switch (input$nivel_at,
@@ -193,8 +207,7 @@ shinyApp(ui, function(input, output) {
       }
       
   })
-  
-  
+
   lista_objetos_especiales <- reactiveVal(value = 0)##Especiales son los que se dibujan. No necesito la lista, nomás saber si está vacía
   
   observeEvent(input$mapa_principal_marker_click,{#2
@@ -257,22 +270,10 @@ shinyApp(ui, function(input, output) {
   
   observe({
     if(lista_objetos_especiales() == 0){
-      shinyjs::runjs(code = "
-                   let botonBorrar=document.getElementsByClassName('leaflet-draw-edit-remove')[0]
-                   if(botonBorrar){
-                     console.log(botonBorrar)
-                     botonBorrar.classList.remove('colorRojo')
-                   }
-                   ")
+      shinyjs::runjs(code =funcionColorearBotonBorrar("remove") )
     }
     else{
-      shinyjs::runjs(code = "
-                   let botonBorrar=document.getElementsByClassName('leaflet-draw-edit-remove')[0]
-                   if(botonBorrar){
-                     console.log(botonBorrar)
-                     botonBorrar.classList.add('colorRojo')
-                   }
-                   ")
+      shinyjs::runjs(code =funcionColorearBotonBorrar("add") )
     }
   })
   observe({
@@ -359,6 +360,46 @@ shinyApp(ui, function(input, output) {
     ##Se reutiliza el método de arriba con este polígono nuevo.
     AccesibilidadPoligono(data_c_geo)
   })
+  
+  # Tour Guide Implementation
+  observeEvent(input$start_tour, {
+    introjs(session, 
+            events = list(onbeforechange = I(paste0(
+              "if (targetElement.getAttribute('data-step') === '4' 
+              ||
+              targetElement.getAttribute('data-step') === '5' 
+              ||
+              targetElement.getAttribute('data-step') === '6' 
+              ) {",
+              "$(\"a[data-value='stats']\").trigger('click')",
+              "} else {",
+              "$(\"a[data-value='map']\").trigger('click')",
+              "}")
+            )),
+            
+            options = list(
+              steps = data.frame(
+                element = c(
+                  "#tour_step_2_nivel",
+                  "#tour_step_3_agebs",
+                  "#tour_step_1_map",
+                  "#tour_step_4_slider",
+                  "#tour_step_5_download",
+                  "#tour_step_6_table"
+                ),
+                intro = c(
+                  "<b>Seleccionar Nivel de Atención</b><br/>Elige entre 1er, 2do, 3er nivel o todos los niveles de CLUES para visualizar en el mapa. Esta elección define la accesibilidad en minutos de cada AGEB/localidad.",
+                  "<b>Agregar AGEBs y Localidades</b><br/>Activa esta opción para añadir datos demográficos de AGEBs y localidades al mapa. ",
+                  "<b>Mapa Principal e Interactividad</b><br/> *: Puedes dar click en un CLUES para conocer información de accesibilidad (tiempo en minutos alrededor) y demográfica (población). <br> *: Da click a un polígono para concer la información de accesibilidad (Hospital más cercano y número de CLUES por tipo y rango de tiempo) y demográficas (Población total y afiliada a SS). <br> **: También puedes utilizar la herramienta de dibujo para seleccionar varios AGEBs y obtener un resumen. ",
+                  "<b>Filtrar por Tiempo de Accesibilidad</b><br/>Usa este deslizador para seleccionar un tiempo en minutos. El sistema filtrará las localidades que tienen una accesibilidad en minutos mayor al valor seleccionado. El valor por defécto de 58 corresponde al indicador de accesibilidad de CONEVAL (2010) 'Tiempo promedio de traslado al hospital la última vez que se tuvo una emergencia'  ",
+                  "<b>Descargar Datos</b><br/>Descarga los datos filtrados por tiempo en diferentes formatos (XLSX para municipios/localidades, GeoJSON para AGEBs).",
+                  "<b>Tabla de Desglose</b><br/>Visualiza los datos detallados por municipios, localidades o AGEBs. Los datos se actualizan automáticamente según el tiempo seleccionado."
+                )
+              )
+            ))
+  })
+  
+  tabStatsServer("tab_stats",nivel_at = reactive(input$nivel_at))##Ya la tenía "independiente", así que aproveché para consumirla como un módulo
 })
 
 #shiny::runApp("app.R",host = "0.0.0.0", port = 80)
