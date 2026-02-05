@@ -1,6 +1,8 @@
 .Rproj.user
 inputs/*
 !inputs/rasters
+!inputs/accesibilidad_SIGEH/
+inputs/accesibilidad_SIGEH/hidalgo
 .R*
 codigos/token_mapbox.R
 codigos/conexion_supabase.R
