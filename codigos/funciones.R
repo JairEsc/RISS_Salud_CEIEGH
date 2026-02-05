@@ -55,7 +55,7 @@ generadorPopUpContentCLUES=function(poligono){
       format(round(poligono$SALUD1_T60, 0), big.mark = ","), " habitantes"
       ,"<br>",
       "<strong>Número de CLUES de nivel 2 a menos de 10 minutos:</strong> ", 
-      format(round(poligono$num_CLUESN2T10, 1), big.mark = ","), " minutos "
+      format(round(poligono$num_CLUESN2T10, 1), big.mark = ","), " unidades"
       #  ,"<br>", #########Pendientes
       # "<strong>Tiempo promedio a CLUES de nivel 2 más cercano:</strong> ", 
       # format(round(poligono$tiempo_promedio_CLUES_N2, 1), big.mark = ","), " minutos"
