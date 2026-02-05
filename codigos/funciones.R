@@ -1,31 +1,4 @@
-library(httr)
-getIsochrones_mapbox=function(coord,times=c(5,15,25,35)){
-  iso.url <- paste("https://api.mapbox.com/isochrone/v1/mapbox/driving/",
-                   coord,
-                   "?contours_minutes=",paste(times,collapse = ","),"&polygons=true&access_token=",Sys.getenv("token_mapbox"),sep = "")
-  
-  #GET()# Compile each individual catchment area polygon
-  r = httr::GET(url = iso.url)
-  geojson_txt = content(r, as = "text", encoding = "UTF-8")
-  isochrones_sf = sf::st_read(geojson_txt, quiet = TRUE)
-  isochrones_sf = isochrones_sf |> 
-    dplyr::select(contour) |> 
-    dplyr::arrange(contour)
-  
-  # Add projection
-  sf::st_crs(isochrones_sf) = 4326
-  ##Pasó algo con este. Quizás actualizaron su API.
-  ##sf::st_difference(isochrones_sf$geometry[4],isochrones_sf$geometry[3])[2] |> st_make_valid() |> plot()
-  ##Esto es una solución, pero está raro.
-  # for (i in seq(nrow(isochrones_sf), 2)) {
-  #   isochrones_sf$geometry[i] = sf::st_difference(isochrones_sf$geometry[i ],isochrones_sf$geometry[i - 1 ])[2]
-  # }
-  # 
-  # isochrones_sf = isochrones_sf |>
-  #   dplyr::mutate(geometry = sf::st_make_valid(geometry))
 
-  return(isochrones_sf)
-}
 ##################################################
 #Pendiente#
 generadorPopUpContentDemog=function(poligono){
@@ -92,7 +65,6 @@ generadorPopUpContentCLUES=function(poligono){
     )
   )
 }
-poligono=(demograficos_scince[1,])
 
 #Cuando la información censal esn confidencial (-6 o -8), modificar el formato para reflejarlo
 AccesibilidadPoligono=function(poligono,leaflet_proxy='mapa_principal'){
@@ -149,10 +121,8 @@ estadisticas_dado_nivel_atencion_y_tiempo=function(nivel,tiempo){
   # tiempo=60
   # nivel=2
   lista_agebs=demograficos_scince |> 
-    dplyr::select(
-      CVEGEO, POB1, SALUD1, NOM_MUN, NOMGEO, 
-      tiempo_promedio_CLUES:tiempo_promedio_CLUES_N3,CLUES,NOMBRE.DE.LA.UNIDAD
-    ) 
+    dplyr::select(NOM_MUN,NOMGEO,CVEGEO,POB1,POB42,POB84,SALUD1,tiempo_promedio_CLUES:tiempo_promedio_CLUES_N3,CLUES,NOMBRE.DE.LA.UNIDAD,CLUES_N1_10,CLUES_N1_60)
+    
   if(nivel%in%c('PRIMER NIVEL',1) ){
     lista_agebs=lista_agebs|> 
       dplyr::filter(tiempo_promedio_CLUES_N1 > tiempo)
@@ -189,27 +159,34 @@ estadisticas_dado_nivel_atencion_y_tiempo=function(nivel,tiempo){
         \(x) mean(x, na.rm = TRUE)
       )
     )
+  
+  
   lista_agebs=lista_agebs|> 
     dplyr::mutate(POB_rel=round(100*POB1/sum(POB1,na.rm=T),1)) |> 
     dplyr::arrange(dplyr::desc(POB_rel)) |> 
-    dplyr::select(NOM_MUN,NOMGEO,CVEGEO,POB1,SALUD1,tiempo_promedio_CLUES_N1:tiempo_promedio_CLUES_N3,CLUES,NOMBRE.DE.LA.UNIDAD,POB_rel) |> 
     dplyr::mutate(
       tiempo_promedio_CLUES_N1=round(tiempo_promedio_CLUES_N1,1),
-      tiempo_promedio_CLUES_N2=round(tiempo_promedio_CLUES_N2,1)
+      tiempo_promedio_CLUES_N2=round(tiempo_promedio_CLUES_N2,1),
+      tiempo_promedio_CLUES_N3=round(tiempo_promedio_CLUES_N3,1),
+      tiempo_promedio_CLUES=round(tiempo_promedio_CLUES,1)
     )
   conteo_por_localidad=conteo_por_localidad |> 
     dplyr::arrange(dplyr::desc(POB1)) |> 
-    dplyr::select(NOM_MUN,NOMGEO,POB1,SALUD1,tiempo_promedio_CLUES_N1,tiempo_promedio_CLUES_N2) |> 
+    dplyr::select(NOM_MUN,NOMGEO,POB1,SALUD1,tiempo_promedio_CLUES:tiempo_promedio_CLUES_N3) |> 
     dplyr::mutate(
       tiempo_promedio_CLUES_N1=round(tiempo_promedio_CLUES_N1,1),
-      tiempo_promedio_CLUES_N2=round(tiempo_promedio_CLUES_N2,1)
+      tiempo_promedio_CLUES_N2=round(tiempo_promedio_CLUES_N2,1),
+      tiempo_promedio_CLUES_N3=round(tiempo_promedio_CLUES_N3,1),
+      tiempo_promedio_CLUES=round(tiempo_promedio_CLUES,1)
     )
   conteo_por_municipio=conteo_por_municipio|> 
     dplyr::arrange(dplyr::desc(POB1)) |> 
-    dplyr::select(NOM_MUN,POB1,SALUD1,tiempo_promedio_CLUES_N1,tiempo_promedio_CLUES_N2) |> 
+    dplyr::select(NOM_MUN,POB1,SALUD1,tiempo_promedio_CLUES:tiempo_promedio_CLUES_N3) |> 
     dplyr::mutate(
       tiempo_promedio_CLUES_N1=round(tiempo_promedio_CLUES_N1,1),
-      tiempo_promedio_CLUES_N2=round(tiempo_promedio_CLUES_N2,1)
+      tiempo_promedio_CLUES_N2=round(tiempo_promedio_CLUES_N2,1),
+      tiempo_promedio_CLUES_N3=round(tiempo_promedio_CLUES_N3,1),
+      tiempo_promedio_CLUES=round(tiempo_promedio_CLUES,1)
     )
   popupsContents=generadorPopUpContentDemog(lista_agebs)
   return(list(lista_agebs,conteo_por_localidad,conteo_por_municipio,popupsContents))

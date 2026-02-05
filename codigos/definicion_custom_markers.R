@@ -37,6 +37,6 @@ addMarkers_custom = function(proxy, data) {
     ), 
     layerId = paste0('CLUES',1:nrow(data))
   ) |> 
-    addSearchFeatures(targetGroups = "CLUES")
+    addSearchFeatures(targetGroups = c("CLUES","municipios"),  options = searchFeaturesOptions(zoom = 12) )
 
 }
