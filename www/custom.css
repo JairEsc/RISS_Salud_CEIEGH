@@ -5,6 +5,9 @@ body {
 .colorRojo{
   background-color: #f1ad98 !important;
 }
+#mapa_principal_container .box-header.with-border{
+  display: none;
+}
 
 .shiny-server-account { display: none; }
 

@@ -100,14 +100,20 @@ ui <- dashboardPage(
     introjsUI(),##Para el Tour
     tabItems(
       tabItem(tabName = "map",
-              fluidRow(
-                introBox(id = "tour_step_1_map", data.step = 3, data.intro = "placeholder",
-                  box(width = 12, class = "map-box",
-                    leafletOutput("mapa_principal", width = "100%", height = "80vh"),
-                    add_busy_spinner(spin = "cube-grid")
-                  )
-                )
-              )
+          fluidRow(
+            div(style = "display: flex; justify-content: center; align-items: center; gap: 20px; padding: 10px; height: 10vh;",
+          img(src = "images/Logotipo1.png", style = "max-height: 100%; max-width: 35%; object-fit: contain;"),
+          img(src = "images/Logotipo armas7.png", style = "max-height: 100%; max-width: 35%; object-fit: contain;")
+            )
+          ),
+          fluidRow(
+            introBox(id = "tour_step_1_map", data.step = 3, data.intro = "placeholder",
+          box(id='mapa_principal_container',width = 12, class = "map-box",
+            leafletOutput("mapa_principal", width = "100%", height = "75vh"),
+            add_busy_spinner(spin = "cube-grid")
+          )
+            )
+          )
       ),
       tabStatsUI("tab_stats")
     )
