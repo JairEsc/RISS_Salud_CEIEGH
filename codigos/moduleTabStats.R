@@ -132,7 +132,7 @@ tabStatsServer <- function(id, nivel_at) {
                               label = ~paste0("CVEGEO: ", CVEGEO, " (", POB_rel, "%)"),
                               popup = lst[[4]]
         ) |> 
-          leaflegend::addLegendNumeric( pal = pal , 
+          addLegendNumeric( pal = pal , 
                                         values = seq(0,max(c(0,max(listas_estadisticas()[[1]]$POB_rel))
                                         ),0.1), position='bottomright',
                                         title = '% pob por localidad', orientation = 'horizontal', 
@@ -175,7 +175,7 @@ tabStatsServer <- function(id, nivel_at) {
         #     transform = function(x) x
         #   )
         # ) |> 
-        leaflegend::addLegendNumeric( pal = pal , 
+        addLegendNumeric( pal = pal , 
                           values = seq(0,max(c(0,max(listas_estadisticas()[[1]]$POB_rel))
                           ),0.1), position='bottomright',
                           title = '% pob por localidad', orientation = 'horizontal', 

@@ -9,11 +9,6 @@
     "content_category": null,
     "has_parameters": false
   },
-  "environment": {
-    "r": {
-      "requires": "~=4.5.0"
-    }
-  },
   "packages": {
     "DBI": {
       "Source": "CRAN",
@@ -164,29 +159,6 @@
         "Archs": "x64"
       }
     },
-    "PKI": {
-      "Source": "CRAN",
-      "Repository": "https://cran.rstudio.com",
-      "description": {
-        "Package": "PKI",
-        "Version": "0.1-14",
-        "Title": "Public Key Infrastucture for R Based on the X.509 Standard",
-        "Author": "Simon Urbanek <Simon.Urbanek@r-project.org>",
-        "Maintainer": "Simon Urbanek <Simon.Urbanek@r-project.org>",
-        "Depends": "R (>= 2.9.0), base64enc",
-        "Enhances": "gmp",
-        "Description": "Public Key Infrastucture functions such as verifying certificates, RSA encription and signing which can be used to build PKI infrastructure and perform cryptographic tasks.",
-        "License": "GPL-2 | GPL-3 | file LICENSE",
-        "URL": "http://www.rforge.net/PKI",
-        "SystemRequirements": "OpenSSL library and headers (openssl-dev or\nsimilar)",
-        "NeedsCompilation": "yes",
-        "Packaged": "2024-06-15 19:22:05 UTC; rforge",
-        "Repository": "CRAN",
-        "Date/Publication": "2024-06-15 19:40:02 UTC",
-        "Built": "R 4.5.0; x86_64-w64-mingw32; 2025-04-08 00:59:19 UTC; windows",
-        "Archs": "x64"
-      }
-    },
     "R6": {
       "Source": "CRAN",
       "Repository": "https://cran.rstudio.com",
@@ -233,6 +205,44 @@
         "Repository": "CRAN",
         "Date/Publication": "2022-04-03 19:20:13 UTC",
         "Built": "R 4.5.0; ; 2025-04-08 00:42:19 UTC; windows"
+      }
+    },
+    "RPostgres": {
+      "Source": "CRAN",
+      "Repository": "https://cran.rstudio.com",
+      "description": {
+        "Package": "RPostgres",
+        "Title": "C++ Interface to PostgreSQL",
+        "Version": "1.4.8",
+        "Date": "2025-02-24",
+        "Authors@R": "c(\n    person(\"Hadley\", \"Wickham\", role = \"aut\"),\n    person(\"Jeroen\", \"Ooms\", role = \"aut\"),\n    person(\"Kirill\", \"Müller\", , \"kirill@cynkra.com\", role = c(\"aut\", \"cre\"),\n           comment = c(ORCID = \"0000-0002-1416-3412\")),\n    person(\"RStudio\", role = \"cph\"),\n    person(\"R Consortium\", role = \"fnd\"),\n    person(\"Tomoaki\", \"Nishiyama\", role = \"ctb\",\n           comment = \"Code for encoding vectors into strings derived from RPostgreSQL\")\n  )",
+        "Description": "Fully DBI-compliant C++-backed interface to PostgreSQL\n    <https://www.postgresql.org/>, an open-source relational database.",
+        "License": "MIT + file LICENSE",
+        "URL": "https://rpostgres.r-dbi.org, https://github.com/r-dbi/RPostgres",
+        "BugReports": "https://github.com/r-dbi/RPostgres/issues",
+        "Depends": "R (>= 3.1.0)",
+        "Imports": "bit64, blob (>= 1.2.0), DBI (>= 1.2.0), hms (>= 1.0.0),\nlubridate, methods, withr",
+        "Suggests": "callr, covr, DBItest (>= 1.7.3), knitr, rlang, rmarkdown,\ntestthat (>= 3.0.0)",
+        "LinkingTo": "cpp11, plogr (>= 0.2.0)",
+        "Config/Needs/website": "r-dbi/dbitemplate",
+        "VignetteBuilder": "knitr",
+        "Config/Needs/build": "decor",
+        "Config/autostyle/scope": "line_breaks",
+        "Config/autostyle/strict": "false",
+        "Config/testthat/edition": "3",
+        "Encoding": "UTF-8",
+        "LazyLoad": "true",
+        "RoxygenNote": "7.3.2.9000",
+        "SystemRequirements": "libpq >= 9.0: libpq-dev (deb) or postgresql-devel\n(rpm)",
+        "Collate": "'PqDriver.R' 'PqConnection.R' 'PqResult.R' 'RPostgres-pkg.R'\n'Redshift.R' 'cpp11.R' 'dbAppendTable_PqConnection.R'\n'dbBegin_PqConnection.R' 'dbBind_PqResult.R'\n'dbClearResult_PqResult.R' 'dbColumnInfo_PqResult.R'\n'dbCommit_PqConnection.R' 'dbConnect_PqDriver.R'\n'dbConnect_RedshiftDriver.R' 'dbDataType_PqConnection.R'\n'dbDataType_PqDriver.R' 'dbDisconnect_PqConnection.R'\n'dbExistsTable_PqConnection_Id.R'\n'dbExistsTable_PqConnection_character.R' 'dbFetch_PqResult.R'\n'dbGetInfo_PqConnection.R' 'dbGetInfo_PqDriver.R'\n'dbGetRowCount_PqResult.R' 'dbGetRowsAffected_PqResult.R'\n'dbGetStatement_PqResult.R' 'dbHasCompleted_PqResult.R'\n'dbIsValid_PqConnection.R' 'dbIsValid_PqDriver.R'\n'dbIsValid_PqResult.R' 'dbListFields_PqConnection_Id.R'\n'dbListFields_PqConnection_character.R'\n'dbListObjects_PqConnection_ANY.R'\n'dbListTables_PqConnection.R'\n'dbQuoteIdentifier_PqConnection_Id.R'\n'dbQuoteIdentifier_PqConnection_SQL.R'\n'dbQuoteIdentifier_PqConnection_character.R'\n'dbQuoteLiteral_PqConnection.R'\n'dbQuoteString_PqConnection_SQL.R'\n'dbQuoteString_PqConnection_character.R'\n'dbReadTable_PqConnection_character.R'\n'dbRemoveTable_PqConnection_character.R'\n'dbRollback_PqConnection.R' 'dbSendQuery_PqConnection.R'\n'dbUnloadDriver_PqDriver.R'\n'dbUnquoteIdentifier_PqConnection_SQL.R'\n'dbWriteTable_PqConnection_character_data.frame.R' 'default.R'\n'export.R' 'quote.R' 'show_PqConnection.R'\n'sqlData_PqConnection.R' 'tables.R' 'transactions.R' 'utils.R'",
+        "NeedsCompilation": "yes",
+        "Packaged": "2025-02-25 05:33:04 UTC; kirill",
+        "Author": "Hadley Wickham [aut],\n  Jeroen Ooms [aut],\n  Kirill Müller [aut, cre] (<https://orcid.org/0000-0002-1416-3412>),\n  RStudio [cph],\n  R Consortium [fnd],\n  Tomoaki Nishiyama [ctb] (Code for encoding vectors into strings derived\n    from RPostgreSQL)",
+        "Maintainer": "Kirill Müller <kirill@cynkra.com>",
+        "Repository": "CRAN",
+        "Date/Publication": "2025-02-25 07:30:02 UTC",
+        "Built": "R 4.5.1; x86_64-w64-mingw32; 2025-08-20 02:05:23 UTC; windows",
+        "Archs": "x64"
       }
     },
     "RSQLite": {
@@ -355,35 +365,6 @@
         "Repository": "CRAN",
         "Date/Publication": "2025-09-14 05:10:38 UTC",
         "Built": "R 4.5.2; x86_64-w64-mingw32; 2025-11-01 00:40:42 UTC; windows",
-        "Archs": "x64"
-      }
-    },
-    "RcppTOML": {
-      "Source": "CRAN",
-      "Repository": "https://cran.rstudio.com",
-      "description": {
-        "Package": "RcppTOML",
-        "Type": "Package",
-        "Title": "'Rcpp' Bindings to Parser for \"Tom's Obvious Markup Language\"",
-        "Version": "0.2.3",
-        "Date": "2025-03-08",
-        "Authors@R": "c(person(\"Dirk\", \"Eddelbuettel\", role = c(\"aut\", \"cre\"), email = \"edd@debian.org\",\n                    comment = c(ORCID = \"0000-0001-6419-907X\")),\n             person(\"Mark\", \"Gillard\", role = \"aut\",\n                    comment = \"Author of 'toml++' header library\"))",
-        "Description": "The configuration format defined by 'TOML' (which expands to\n \"Tom's Obvious Markup Language\") specifies an excellent format\n (described at <https://toml.io/en/>) suitable for both human editing\n as well as the common uses of a machine-readable format. This package\n uses 'Rcpp' to connect to the 'toml++' parser written by Mark Gillard\n to R.",
-        "SystemRequirements": "A C++17 compiler",
-        "BugReports": "https://github.com/eddelbuettel/rcpptoml/issues",
-        "URL": "http://dirk.eddelbuettel.com/code/rcpp.toml.html",
-        "Imports": "Rcpp (>= 1.0.8)",
-        "Depends": "R (>= 3.3.0)",
-        "LinkingTo": "Rcpp",
-        "Suggests": "tinytest",
-        "License": "GPL (>= 2)",
-        "NeedsCompilation": "yes",
-        "Packaged": "2025-03-08 13:54:57 UTC; edd",
-        "Author": "Dirk Eddelbuettel [aut, cre] (<https://orcid.org/0000-0001-6419-907X>),\n  Mark Gillard [aut] (Author of 'toml++' header library)",
-        "Maintainer": "Dirk Eddelbuettel <edd@debian.org>",
-        "Repository": "CRAN",
-        "Date/Publication": "2025-03-08 14:30:06 UTC",
-        "Built": "R 4.5.0; x86_64-w64-mingw32; 2025-05-31 00:23:38 UTC; windows",
         "Archs": "x64"
       }
     },
@@ -2163,35 +2144,6 @@
         "Archs": "x64"
       }
     },
-    "jose": {
-      "Source": "CRAN",
-      "Repository": "https://cran.rstudio.com",
-      "description": {
-        "Package": "jose",
-        "Type": "Package",
-        "Title": "JavaScript Object Signing and Encryption",
-        "Version": "1.2.1",
-        "Authors@R": "person(\"Jeroen\", \"Ooms\", role = c(\"aut\", \"cre\"), \n    email = \"jeroenooms@gmail.com\", comment = c(ORCID = \"0000-0002-4035-0289\"))",
-        "Description": "Read and write JSON Web Keys (JWK, rfc7517), generate and verify JSON\n    Web Signatures (JWS, rfc7515) and encode/decode JSON Web Tokens (JWT, rfc7519)\n    <https://datatracker.ietf.org/wg/jose/documents/>. These standards provide \n    modern signing and encryption formats that are natively supported by browsers\n    via the JavaScript WebCryptoAPI <https://www.w3.org/TR/WebCryptoAPI/#jose>, \n    and used by services like OAuth 2.0, LetsEncrypt, and Github Apps.",
-        "License": "MIT + file LICENSE",
-        "URL": "https://r-lib.r-universe.dev/jose",
-        "BugReports": "https://github.com/r-lib/jose/issues",
-        "Depends": "openssl (>= 1.2.1)",
-        "Imports": "jsonlite",
-        "RoxygenNote": "7.1.2",
-        "VignetteBuilder": "knitr",
-        "Suggests": "spelling, testthat, knitr, rmarkdown",
-        "Encoding": "UTF-8",
-        "Language": "en-US",
-        "NeedsCompilation": "no",
-        "Packaged": "2024-10-03 14:12:53 UTC; jeroen",
-        "Author": "Jeroen Ooms [aut, cre] (<https://orcid.org/0000-0002-4035-0289>)",
-        "Maintainer": "Jeroen Ooms <jeroenooms@gmail.com>",
-        "Repository": "CRAN",
-        "Date/Publication": "2024-10-04 12:20:01 UTC",
-        "Built": "R 4.5.0; ; 2025-05-31 01:16:29 UTC; windows"
-      }
-    },
     "jqr": {
       "Source": "CRAN",
       "Repository": "https://cran.rstudio.com",
@@ -2465,6 +2417,34 @@
         "Built": "R 4.5.2; ; 2026-01-21 04:10:59 UTC; windows"
       }
     },
+    "leaflegend": {
+      "Source": "CRAN",
+      "Repository": "https://cran.rstudio.com",
+      "description": {
+        "Package": "leaflegend",
+        "Type": "Package",
+        "Title": "Add Custom Legends to 'leaflet' Maps",
+        "Version": "1.2.1",
+        "Authors@R": "c(\n    person(\"Thomas\", \"Roh\", email = \"thomas@roh.engineering\", role = c(\"aut\", \"cre\")),\n    person(\"Ricardo Rodrigo\", \"Basa\", email = \"radbasa@gmail.com\", role = c(\"ctb\")))",
+        "Description": "Provides extensions to the 'leaflet' package to \n    customize legends with images, text styling, orientation, sizing,\n    and symbology and functions to create symbols to plot on maps.",
+        "License": "MIT + file LICENSE",
+        "Encoding": "UTF-8",
+        "Depends": "R (>= 3.3.0)",
+        "Imports": "leaflet, htmltools, stats, base64enc, htmlwidgets",
+        "RoxygenNote": "7.2.3",
+        "URL": "https://leaflegend.delveds.com,\nhttps://github.com/tomroh/leaflegend",
+        "BugReports": "https://github.com/tomroh/leaflegend/issues",
+        "Suggests": "covr, testthat (>= 3.0.0)",
+        "Config/testthat/edition": "3",
+        "NeedsCompilation": "no",
+        "Packaged": "2024-05-09 14:46:18 UTC; thoma",
+        "Author": "Thomas Roh [aut, cre],\n  Ricardo Rodrigo Basa [ctb]",
+        "Maintainer": "Thomas Roh <thomas@roh.engineering>",
+        "Repository": "CRAN",
+        "Date/Publication": "2024-05-09 15:00:03 UTC",
+        "Built": "R 4.5.0; ; 2025-04-10 02:16:32 UTC; windows"
+      }
+    },
     "leaflet": {
       "Source": "CRAN",
       "Repository": "https://cran.rstudio.com",
@@ -2581,6 +2561,41 @@
         "Repository": "CRAN",
         "Date/Publication": "2023-11-07 10:10:10 UTC",
         "Built": "R 4.5.0; ; 2025-04-10 01:15:19 UTC; windows"
+      }
+    },
+    "lubridate": {
+      "Source": "CRAN",
+      "Repository": "https://cran.rstudio.com",
+      "description": {
+        "Type": "Package",
+        "Package": "lubridate",
+        "Title": "Make Dealing with Dates a Little Easier",
+        "Version": "1.9.4",
+        "Authors@R": "c(\n    person(\"Vitalie\", \"Spinu\", , \"spinuvit@gmail.com\", role = c(\"aut\", \"cre\")),\n    person(\"Garrett\", \"Grolemund\", role = \"aut\"),\n    person(\"Hadley\", \"Wickham\", role = \"aut\"),\n    person(\"Davis\", \"Vaughan\", role = \"ctb\"),\n    person(\"Ian\", \"Lyttle\", role = \"ctb\"),\n    person(\"Imanuel\", \"Costigan\", role = \"ctb\"),\n    person(\"Jason\", \"Law\", role = \"ctb\"),\n    person(\"Doug\", \"Mitarotonda\", role = \"ctb\"),\n    person(\"Joseph\", \"Larmarange\", role = \"ctb\"),\n    person(\"Jonathan\", \"Boiser\", role = \"ctb\"),\n    person(\"Chel Hee\", \"Lee\", role = \"ctb\")\n  )",
+        "Maintainer": "Vitalie Spinu <spinuvit@gmail.com>",
+        "Description": "Functions to work with date-times and time-spans: fast and\n    user friendly parsing of date-time data, extraction and updating of\n    components of a date-time (years, months, days, hours, minutes, and\n    seconds), algebraic manipulation on date-time and time-span objects.\n    The 'lubridate' package has a consistent and memorable syntax that\n    makes working with dates easy and fun.",
+        "License": "GPL (>= 2)",
+        "URL": "https://lubridate.tidyverse.org,\nhttps://github.com/tidyverse/lubridate",
+        "BugReports": "https://github.com/tidyverse/lubridate/issues",
+        "Depends": "methods, R (>= 3.2)",
+        "Imports": "generics, timechange (>= 0.3.0)",
+        "Suggests": "covr, knitr, rmarkdown, testthat (>= 2.1.0), vctrs (>= 0.6.5)",
+        "Enhances": "chron, data.table, timeDate, tis, zoo",
+        "VignetteBuilder": "knitr",
+        "Config/Needs/website": "tidyverse/tidytemplate",
+        "Config/testthat/edition": "3",
+        "Encoding": "UTF-8",
+        "LazyData": "true",
+        "RoxygenNote": "7.2.3",
+        "SystemRequirements": "C++11, A system with zoneinfo data (e.g.\n/usr/share/zoneinfo). On Windows the zoneinfo included with R\nis used.",
+        "Collate": "'Dates.r' 'POSIXt.r' 'util.r' 'parse.r' 'timespans.r'\n'intervals.r' 'difftimes.r' 'durations.r' 'periods.r'\n'accessors-date.R' 'accessors-day.r' 'accessors-dst.r'\n'accessors-hour.r' 'accessors-minute.r' 'accessors-month.r'\n'accessors-quarter.r' 'accessors-second.r' 'accessors-tz.r'\n'accessors-week.r' 'accessors-year.r' 'am-pm.r' 'time-zones.r'\n'numeric.r' 'coercion.r' 'constants.r' 'cyclic_encoding.r'\n'data.r' 'decimal-dates.r' 'deprecated.r' 'format_ISO8601.r'\n'guess.r' 'hidden.r' 'instants.r' 'leap-years.r'\n'ops-addition.r' 'ops-compare.r' 'ops-division.r'\n'ops-integer-division.r' 'ops-m+.r' 'ops-modulo.r'\n'ops-multiplication.r' 'ops-subtraction.r' 'package.r'\n'pretty.r' 'round.r' 'stamp.r' 'tzdir.R' 'update.r' 'vctrs.R'\n'zzz.R'",
+        "NeedsCompilation": "yes",
+        "Packaged": "2024-12-07 23:41:45 UTC; vitalie",
+        "Author": "Vitalie Spinu [aut, cre],\n  Garrett Grolemund [aut],\n  Hadley Wickham [aut],\n  Davis Vaughan [ctb],\n  Ian Lyttle [ctb],\n  Imanuel Costigan [ctb],\n  Jason Law [ctb],\n  Doug Mitarotonda [ctb],\n  Joseph Larmarange [ctb],\n  Jonathan Boiser [ctb],\n  Chel Hee Lee [ctb]",
+        "Repository": "CRAN",
+        "Date/Publication": "2024-12-08 12:10:02 UTC",
+        "Built": "R 4.5.0; x86_64-w64-mingw32; 2025-04-10 01:15:28 UTC; windows",
+        "Archs": "x64"
       }
     },
     "magrittr": {
@@ -2866,34 +2881,6 @@
         "Repository": "CRAN",
         "Date/Publication": "2024-05-06 14:50:02 UTC",
         "Built": "R 4.5.2; ; 2025-11-01 02:32:04 UTC; windows"
-      }
-    },
-    "packrat": {
-      "Source": "CRAN",
-      "Repository": "https://cran.rstudio.com",
-      "description": {
-        "Type": "Package",
-        "Package": "packrat",
-        "Title": "A Dependency Management System for Projects and their R Package\nDependencies",
-        "Version": "0.9.2",
-        "Authors@R": "c(\n    person(\"Aron\", \"Atkins\", , \"aron@posit.co\", role = c(\"aut\", \"cre\")),\n    person(\"Toph\", \"Allen\", role = \"aut\"),\n    person(\"Kevin\", \"Ushey\", role = \"aut\"),\n    person(\"Jonathan\", \"McPherson\", role = \"aut\"),\n    person(\"Joe\", \"Cheng\", role = \"aut\"),\n    person(\"JJ\", \"Allaire\", role = \"aut\"),\n    person(\"Posit Software, PBC\", role = c(\"cph\", \"fnd\"))\n  )",
-        "Description": "Manage the R packages your project depends on in an isolated,\n    portable, and reproducible way.",
-        "License": "GPL-2",
-        "URL": "https://github.com/rstudio/packrat",
-        "BugReports": "https://github.com/rstudio/packrat/issues",
-        "Depends": "R (>= 3.0.0)",
-        "Imports": "tools, utils",
-        "Suggests": "devtools, httr, knitr, mockery, rmarkdown, testthat (>=\n3.0.0)",
-        "Config/testthat/edition": "3",
-        "Encoding": "UTF-8",
-        "RoxygenNote": "7.2.3",
-        "NeedsCompilation": "no",
-        "Packaged": "2023-09-05 11:45:33 UTC; aron",
-        "Author": "Aron Atkins [aut, cre],\n  Toph Allen [aut],\n  Kevin Ushey [aut],\n  Jonathan McPherson [aut],\n  Joe Cheng [aut],\n  JJ Allaire [aut],\n  Posit Software, PBC [cph, fnd]",
-        "Maintainer": "Aron Atkins <aron@posit.co>",
-        "Repository": "CRAN",
-        "Date/Publication": "2023-09-05 13:00:02 UTC",
-        "Built": "R 4.5.0; ; 2025-05-31 00:24:41 UTC; windows"
       }
     },
     "pak": {
@@ -3532,37 +3519,6 @@
         "Built": "R 4.5.1; ; 2025-08-04 00:22:38 UTC; windows"
       }
     },
-    "renv": {
-      "Source": "CRAN",
-      "Repository": "https://cran.rstudio.com",
-      "description": {
-        "Package": "renv",
-        "Type": "Package",
-        "Title": "Project Environments",
-        "Version": "1.1.5",
-        "Authors@R": "c(\n    person(\"Kevin\", \"Ushey\", role = c(\"aut\", \"cre\"), email = \"kevin@rstudio.com\",\n           comment = c(ORCID = \"0000-0003-2880-7407\")),\n    person(\"Hadley\", \"Wickham\", role = c(\"aut\"), email = \"hadley@rstudio.com\",\n           comment = c(ORCID = \"0000-0003-4757-117X\")),\n    person(\"Posit Software, PBC\", role = c(\"cph\", \"fnd\"))\n    )",
-        "Description": "A dependency management toolkit for R. Using 'renv', you can create\n    and manage project-local R libraries, save the state of these libraries to\n    a 'lockfile', and later restore your library as required. Together, these\n    tools can help make your projects more isolated, portable, and reproducible.",
-        "License": "MIT + file LICENSE",
-        "URL": "https://rstudio.github.io/renv/, https://github.com/rstudio/renv",
-        "BugReports": "https://github.com/rstudio/renv/issues",
-        "Imports": "utils",
-        "Suggests": "BiocManager, cli, compiler, covr, cpp11, devtools, generics,\ngitcreds, jsonlite, jsonvalidate, knitr, miniUI, modules,\npackrat, pak, R6, remotes, reticulate, rmarkdown, rstudioapi,\nshiny, testthat, uuid, waldo, yaml, webfakes",
-        "Encoding": "UTF-8",
-        "RoxygenNote": "7.3.2",
-        "VignetteBuilder": "knitr",
-        "Config/Needs/website": "tidyverse/tidytemplate",
-        "Config/testthat/edition": "3",
-        "Config/testthat/parallel": "true",
-        "Config/testthat/start-first": "bioconductor,python,install,restore,snapshot,retrieve,remotes",
-        "NeedsCompilation": "no",
-        "Packaged": "2025-07-24 20:47:34 UTC; kevin",
-        "Author": "Kevin Ushey [aut, cre] (ORCID: <https://orcid.org/0000-0003-2880-7407>),\n  Hadley Wickham [aut] (ORCID: <https://orcid.org/0000-0003-4757-117X>),\n  Posit Software, PBC [cph, fnd]",
-        "Maintainer": "Kevin Ushey <kevin@rstudio.com>",
-        "Repository": "CRAN",
-        "Date/Publication": "2025-07-24 21:40:02 UTC",
-        "Built": "R 4.5.1; ; 2025-09-02 08:25:24 UTC; windows"
-      }
-    },
     "rintrojs": {
       "Source": "CRAN",
       "Repository": "https://cran.rstudio.com",
@@ -3716,37 +3672,6 @@
         "Repository": "CRAN",
         "Date/Publication": "2025-07-12 09:00:02 UTC",
         "Built": "R 4.5.1; ; 2025-08-04 00:20:26 UTC; windows"
-      }
-    },
-    "rsconnect": {
-      "Source": "CRAN",
-      "Repository": "https://cran.rstudio.com",
-      "description": {
-        "Type": "Package",
-        "Package": "rsconnect",
-        "Title": "Deploy Docs, Apps, and APIs to 'Posit Connect', 'shinyapps.io',\nand 'RPubs'",
-        "Version": "1.4.1",
-        "Authors@R": "c(\n    person(\"Aron\", \"Atkins\", , \"aron@posit.co\", role = c(\"aut\", \"cre\")),\n    person(\"Toph\", \"Allen\", role = \"aut\"),\n    person(\"Hadley\", \"Wickham\", role = \"aut\"),\n    person(\"Jonathan\", \"McPherson\", role = \"aut\"),\n    person(\"JJ\", \"Allaire\", role = \"aut\"),\n    person(\"Posit Software, PBC\", role = c(\"cph\", \"fnd\"))\n  )",
-        "Description": "Programmatic deployment interface for 'RPubs',\n    'shinyapps.io', and 'Posit Connect'. Supported content types include R\n    Markdown documents, Shiny applications, Plumber APIs, plots, and\n    static web content.",
-        "License": "GPL-2",
-        "URL": "https://rstudio.github.io/rsconnect/,\nhttps://github.com/rstudio/rsconnect",
-        "BugReports": "https://github.com/rstudio/rsconnect/issues",
-        "Depends": "R (>= 3.5.0)",
-        "Imports": "cli, curl, digest, jsonlite, lifecycle, openssl (>= 2.0.0),\nPKI, packrat (>= 0.6), renv (>= 1.0.0), rlang (>= 1.0.0),\nrstudioapi (>= 0.5), tools, yaml (>= 2.1.5), RcppTOML, jose,\nutils",
-        "Suggests": "Biobase, BiocManager, foreign, knitr, MASS, plumber (>=\n0.3.2), quarto, RCurl, reticulate, rmarkdown (>= 1.1), shiny,\ntestthat (>= 3.1.9), webfakes, withr",
-        "VignetteBuilder": "knitr, rmarkdown",
-        "Config/Needs/website": "tidyverse/tidytemplate",
-        "Config/testthat/edition": "3",
-        "Config/testthat/parallel": "true",
-        "Encoding": "UTF-8",
-        "RoxygenNote": "7.3.2",
-        "NeedsCompilation": "no",
-        "Packaged": "2025-05-21 17:58:06 UTC; aron",
-        "Author": "Aron Atkins [aut, cre],\n  Toph Allen [aut],\n  Hadley Wickham [aut],\n  Jonathan McPherson [aut],\n  JJ Allaire [aut],\n  Posit Software, PBC [cph, fnd]",
-        "Maintainer": "Aron Atkins <aron@posit.co>",
-        "Repository": "CRAN",
-        "Date/Publication": "2025-05-22 04:50:01 UTC",
-        "Built": "R 4.5.0; ; 2025-05-31 01:16:56 UTC; windows"
       }
     },
     "rstudioapi": {
@@ -4441,6 +4366,34 @@
         "Built": "R 4.5.0; ; 2025-04-10 01:47:32 UTC; windows"
       }
     },
+    "timechange": {
+      "Source": "CRAN",
+      "Repository": "https://cran.rstudio.com",
+      "description": {
+        "Package": "timechange",
+        "Title": "Efficient Manipulation of Date-Times",
+        "Version": "0.3.0",
+        "Authors@R": "c(person(\"Vitalie\", \"Spinu\", email = \"spinuvit@gmail.com\", role = c(\"aut\", \"cre\")),\n             person(\"Google Inc.\", role = c(\"ctb\", \"cph\")))",
+        "Description": "Efficient routines for manipulation of date-time objects while\n   accounting for time-zones and daylight saving times. The package includes\n   utilities for updating of date-time components (year, month, day etc.),\n   modification of time-zones, rounding of date-times, period addition and\n   subtraction etc. Parts of the 'CCTZ' source code, released under the Apache\n   2.0 License, are included in this package. See\n   <https://github.com/google/cctz> for more details.",
+        "Depends": "R (>= 3.3)",
+        "License": "GPL (>= 3)",
+        "Encoding": "UTF-8",
+        "LinkingTo": "cpp11 (>= 0.2.7)",
+        "Suggests": "testthat (>= 0.7.1.99), knitr",
+        "SystemRequirements": "A system with zoneinfo data (e.g.\n/usr/share/zoneinfo) as well as a recent-enough C++11 compiler\n(such as g++-4.8 or later). On Windows the zoneinfo included\nwith R is used.",
+        "BugReports": "https://github.com/vspinu/timechange/issues",
+        "URL": "https://github.com/vspinu/timechange/",
+        "RoxygenNote": "7.2.1",
+        "NeedsCompilation": "yes",
+        "Packaged": "2024-01-18 08:57:24 UTC; vspinu",
+        "Author": "Vitalie Spinu [aut, cre],\n  Google Inc. [ctb, cph]",
+        "Maintainer": "Vitalie Spinu <spinuvit@gmail.com>",
+        "Repository": "CRAN",
+        "Date/Publication": "2024-01-18 09:20:02 UTC",
+        "Built": "R 4.5.0; x86_64-w64-mingw32; 2025-04-10 00:39:05 UTC; windows",
+        "Archs": "x64"
+      }
+    },
     "tinytex": {
       "Source": "CRAN",
       "Repository": "https://cran.rstudio.com",
@@ -5090,7 +5043,7 @@
       "checksum": "481a60b20f3112aa31a2ee1169d5e235"
     },
     "app.R": {
-      "checksum": "e95c12b344873b95db44e54b3867d50b"
+      "checksum": "de9d964e7ddaade683da0397cdbf0ca3"
     },
     "clues_en_operacion_y_limites_municipales.sqlite": {
       "checksum": "558edd467225fcfab3d7d2673e8b4e7b"
@@ -5111,16 +5064,16 @@
       "checksum": "4adfb4b4dd990d0e0e25a776744ded47"
     },
     "codigos/extras_css.R": {
-      "checksum": "35d9994ca39310f7566055a8cef1994a"
+      "checksum": "58e3e70553ba89cc4132c5b7e6dbc801"
     },
     "codigos/funciones.R": {
-      "checksum": "e4b8d51584edfa0e633eb6409fe2646c"
+      "checksum": "6a53955e3bdd8586345f9c9b17941537"
     },
     "codigos/mapbox_isochrone multipunto.R": {
       "checksum": "144cae30583e98d89525dacb93f183cc"
     },
     "codigos/moduleTabStats.R": {
-      "checksum": "f095780bb8d43769e9e0e0c5d54fcd1f"
+      "checksum": "4a6df7d8cde811388a074d430c2d6aad"
     },
     "codigos/muestra_de_regionalizacion.R": {
       "checksum": "7bbec5ff46e64cb20307bfa00b400d8f"
@@ -5135,7 +5088,7 @@
       "checksum": "672fa08e6329f2c32ee66db35fbcd5cb"
     },
     "codigos/no_usar_calculos_rasters_accesibilidad.R": {
-      "checksum": "f73ef2084075e2197d7e7b6069b43f59"
+      "checksum": "b2c0b3685cf94bf63d14afa394e908b0"
     },
     "codigos/no_usar_comparacion.R": {
       "checksum": "d5a9b445db3ccd85073df26b5ad76510"
@@ -5245,6 +5198,18 @@
     "inputs/rasters/acces_CLUESN3_max90.tif": {
       "checksum": "fdc8406faca3eb6fc968c2175a26165f"
     },
+    "inputs/rasters/acces_peatonal_CLUES_max90.tif": {
+      "checksum": "d765028a19d8c8bd489547611eed3e1a"
+    },
+    "inputs/rasters/acces_peatonal_CLUESN1_max90.tif": {
+      "checksum": "7355d1efd44b85360b22ca3561c7acfa"
+    },
+    "inputs/rasters/acces_peatonal_CLUESN2_max90.tif": {
+      "checksum": "81ad46c103ff5a09dc60884e67575d15"
+    },
+    "inputs/rasters/acces_peatonal_CLUESN3_max90.tif": {
+      "checksum": "242076241bd231d77953fd8ab6f1db99"
+    },
     "inputs/tizayuca_unidades_demograficas.geojson": {
       "checksum": "bb4c1fdae26af054fa28c3a84d9dcce5"
     },
@@ -5255,31 +5220,34 @@
       "checksum": "7ecca475a7de027ce89e1e930bab73a0"
     },
     "outputs/cluesN1_info_accesibilidad.geojson": {
-      "checksum": "e412cc94d75ba3f7d21c3c118446b8f4"
+      "checksum": "c1b75cbb294f5c32db06d9b3b74e0ec6"
     },
     "outputs/cluesN2_info_accesibilidad.geojson": {
-      "checksum": "c91d1ae57552d06446fc0e64ed6660f4"
+      "checksum": "fc09f8fba4f507c4ea9083c54d876fc7"
     },
     "outputs/demograficos_cartograficos_scince_20.geojson": {
-      "checksum": "b004e746129bd0f27b36b117d4e418e8"
+      "checksum": "94fa99eff89ca1ec489eff4f232231cf"
     },
     "outputs/demograficos_info_accesibilidad.geojson": {
-      "checksum": "dcdfeace5c5ca757e98c9be5123e8400"
+      "checksum": "074342936b69feab1d71d5a5e87ea900"
     },
     "outputs/demograficos_info_accesibilidad_cluesN1.geojson": {
-      "checksum": "3ea6088c90f0c65b1e53691980c2de11"
+      "checksum": "31ab763ec1dead0eae6e9bd9d3f25a3d"
     },
     "outputs/demograficos_info_accesibilidad_provisional.geojson": {
-      "checksum": "e6ec299c38406551bdf025664621eb95"
+      "checksum": "5acaf5e9a9d379988497bfdfbe651d0c"
     },
     "README.md": {
       "checksum": "8aed3ffe2deea0f11b00bc132ac995d4"
     },
-    "renv.lock": {
-      "checksum": "f67792cd474319058e7c661ebe84e981"
-    },
     "www/custom.css": {
-      "checksum": "2bbff17c74d6b77d918033db7a0d2697"
+      "checksum": "186071e65f759ad0bb41876501cedd95"
+    },
+    "www/images/Logotipo armas7.png": {
+      "checksum": "7029058b2faabb48e983b35e9e1b3134"
+    },
+    "www/images/Logotipo1.png": {
+      "checksum": "d425c03ae9a81c47909783d358b5e2fb"
     },
     "www/images/marker-icon-blue.png": {
       "checksum": "87f6ca46ac356e81dc438589630ae107"
