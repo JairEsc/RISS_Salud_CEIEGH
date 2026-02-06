@@ -119,32 +119,11 @@ ui <- dashboardPage(
     )
   )
 )
-
+lista_rasters=list.files("inputs/rasters/",full.names = T) |> sort() |> lapply(raster::raster)
 shinyApp(ui, function(input, output,session) {
   ###Lista de valores reactivos utilizables
   clues_solicitadosss=reactiveValues(df=NULL)
-  # Simple startup prefetch to speed first interaction (minimal change)
-  raster_cache <- new.env(parent = emptyenv())
-  try({
-    init_level <- isolate(input$nivel_at)
-    # prefetch clues table for initial level
-    pref <- tryCatch({
-      clues_en_operacion |> dplyr::filter(NIVEL.ATENCION==init_level | init_level=="CUALQUIER NIVEL") |>
-        dplyr::select(CLUES,MUNICIPIO,LOCALIDAD,NOMBRE.DE.LA.UNIDAD,NIVEL.ATENCION,CLUESN2_mas_cercana:num_CLUESN1T10,geometry) |>
-        dplyr::collect() |>
-        dplyr::mutate(geometry= sf::st_as_sfc(structure(geometry,class = "WKB" ),EWKB=T)) |> st_as_sf()
-    }, error = function(e) NULL)
-    if(!is.null(pref)) clues_solicitadosss$df <- pref
-    # preload raster for initial level
-    raster_cache$tiempo_zona <- tryCatch({
-      switch (init_level,
-              "PRIMER NIVEL" = raster("inputs/rasters/acces_CLUESN1_max90.tif"),
-              "SEGUNDO NIVEL" = raster("inputs/rasters/acces_CLUESN2_max90.tif"),
-              "TERCER NIVEL" = raster("inputs/rasters/acces_CLUESN3_max90.tif"),
-              "CUALQUIER NIVEL" = raster("inputs/rasters/acces_CLUES_max90.tif")
-      )
-    }, error = function(e) NULL)
-  })
+
   output$mapa_principal=renderLeaflet({
     #Mapa con tiles por defecto y barra de herramientas para dibujar polígonos
     leaflet() |> addTiles() |> 
@@ -171,13 +150,19 @@ shinyApp(ui, function(input, output,session) {
         dplyr::mutate(geometry= sf::st_as_sfc(structure(geometry,class = "WKB" ),EWKB=T)) |> st_as_sf()
       clues_solicitadosss$df=clues_solicitados
       showNotification(paste0(nrow(clues_solicitados)," CLUES de ",stringr::str_to_lower(input$nivel_at)) )
-      tiempo_zona=switch (input$nivel_at,
-                          "PRIMER NIVEL" = raster("inputs/rasters/acces_CLUESN1_max90.tif"),
-                          "SEGUNDO NIVEL" = raster("inputs/rasters/acces_CLUESN2_max90.tif"),
-                          "TERCER NIVEL" = raster("inputs/rasters/acces_CLUESN3_max90.tif"),
-                          "CUALQUIER NIVEL" = raster("inputs/rasters/acces_CLUES_max90.tif")
+      tiempo_zona_auto=switch (input$nivel_at,
+                          "PRIMER NIVEL" = lista_rasters[[2]],
+                          "SEGUNDO NIVEL" = lista_rasters[[3]],
+                          "TERCER NIVEL" = lista_rasters[[4]],
+                          "CUALQUIER NIVEL" = lista_rasters[[1]]
       )
-      iso1_sigeh=raster::rasterToContour(tiempo_zona, levels = c(10,20,40,60,90))|> st_as_sf() |> st_set_crs(st_crs("EPSG:32614")) |>st_transform(st_crs("EPSG:4326"))
+      tiempo_zona_peatonal=switch (input$nivel_at,
+                          "PRIMER NIVEL" = lista_rasters[[6]],
+                          "SEGUNDO NIVEL" = lista_rasters[[7]],
+                          "TERCER NIVEL" = lista_rasters[[8]],
+                          "CUALQUIER NIVEL" = lista_rasters[[5]]
+      )
+      iso1_sigeh=raster::rasterToContour(tiempo_zona_auto, levels = c(10,20,40,60,90))|> st_as_sf() |> st_set_crs(st_crs("EPSG:32614")) |>st_transform(st_crs("EPSG:4326"))
       leafletProxy("mapa_principal") |> ##Esta función se puede generalizar y aislar
         clearMarkers() |> 
         clearImages() |> 
@@ -185,10 +170,12 @@ shinyApp(ui, function(input, output,session) {
         removeShape(layerId = paste0("Isocronas",1:nrow(iso1_sigeh))) |> 
         removeControl(layerId = "Accesibilidad en minutos2") |>
         addMarkers_custom(data = clues_solicitados) |> 
-        addRasterImage(projectRasterForLeaflet(tiempo_zona,method = "ngb"),colors = "Spectral",group = "Accesibilidad en minutos") |> 
-        addPolylines(data=iso1_sigeh  ,
-                     color=paleta_spectral_comun(iso1_sigeh$level |> as.numeric()),opacity = 1,group = "Isocronas",layerId = paste0("Isocronas",1:nrow(iso1_sigeh))) |>
-        addLayersControl(overlayGroups = c("Accesibilidad en minutos", "Isocronas","CLUES"))
+        addRasterImage(projectRasterForLeaflet(tiempo_zona_auto,method = "ngb"),colors = "Spectral",group = "Accesibilidad carretera (en minutos)") |> 
+        addRasterImage(projectRasterForLeaflet(tiempo_zona_peatonal,method = "ngb"),colors = "Spectral",group = "Accesibilidad peatonal (en minutos)") |> 
+        # addPolylines(data=iso1_sigeh  ,
+        #              color=paleta_spectral_comun(iso1_sigeh$level |> as.numeric()),opacity = 1,group = "Isocronas",layerId = paste0("Isocronas",1:nrow(iso1_sigeh))) |>
+        addLayersControl(overlayGroups = c("Accesibilidad carretera (en minutos)","Accesibilidad peatonal (en minutos)","CLUES")) |> 
+        hideGroup("Accesibilidad peatonal (en minutos)")
   })
   
   #Agregamos el checkbox (agebs) con debounce
@@ -300,9 +287,9 @@ shinyApp(ui, function(input, output,session) {
     }
   })
   observe({
-    if("Accesibilidad en minutos" %in% input$mapa_principal_groups 
+    if("Accesibilidad carretera (en minutos)" %in% input$mapa_principal_groups 
        | 
-       "Isocronas" %in% input$mapa_principal_groups){
+       "Accesibilidad peatonal (en minutos)" %in% input$mapa_principal_groups){
       leafletProxy("mapa_principal") |> addLegend(
         position = "bottomright",
         pal = colorNumeric(palette = "Spectral", domain = c(10, 90)),

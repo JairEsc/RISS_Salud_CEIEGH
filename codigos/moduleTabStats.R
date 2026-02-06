@@ -131,7 +131,13 @@ tabStatsServer <- function(id, nivel_at) {
                               color = pal(capa_sf$POB_rel), weight = 7,opacity = 1,
                               label = ~paste0("CVEGEO: ", CVEGEO, " (", POB_rel, "%)"),
                               popup = lst[[4]]
-        )
+        ) |> 
+          leaflegend::addLegendNumeric( pal = pal , 
+                                        values = seq(0,max(c(0,max(listas_estadisticas()[[1]]$POB_rel))
+                                        ),0.1), position='bottomright',
+                                        title = '% pob por localidad', orientation = 'horizontal', 
+                                        shape = 'rect', decreasing = FALSE, height = 20,width = 150,tickLength = 0)
+        
       }
       m
     })
@@ -141,15 +147,40 @@ tabStatsServer <- function(id, nivel_at) {
       pal <- colorNumeric(palette = "YlOrRd", domain = c(0, 
                                                          max(c(0,max(listas_estadisticas()[[1]]$POB_rel))
                                                          )))##El máximo de un conjunto vacío es -Inf, por eso tomamos el máximo
-
+      print(seq.int(0, 
+                  max(c(0,max(listas_estadisticas()[[1]]$POB_rel))
+                  ),length.out = 5))
       leafletProxy("mapa_stats", session = session) |>
         clearShapes() |>
+        clearControls() |> 
         addPolygons(data = capa_sf,
                     fillColor =pal(capa_sf$POB_rel),fillOpacity = 0.9,
                     color=pal(capa_sf$POB_rel),weight = 7,opacity = 1,
                     label = ~paste0("CVEGEO: ", capa_sf$CVEGEO, " (", capa_sf$POB_rel, "%)"),
                     popup = listas_estadisticas()[[4]]
-        )
+        ) |> 
+        # addLegend(
+        #   position = "bottomright",
+        #   pal = pal,
+        #   values = seq.int(0, 
+        #              max(c(0,max(listas_estadisticas()[[1]]$POB_rel))
+        #              ),length.out = 5),
+        #   title = "Población por localidad",
+        #   opacity = 0.85,
+        #   #group = "Accesibilidad en minutos",
+        #   layerId = "legend_agebs_tabStats",
+        #   labFormat = labelFormat(
+        #     suffix = " %",
+        #     between = "  ",
+        #     transform = function(x) x
+        #   )
+        # ) |> 
+        leaflegend::addLegendNumeric( pal = pal , 
+                          values = seq(0,max(c(0,max(listas_estadisticas()[[1]]$POB_rel))
+                          ),0.1), position='bottomright',
+                          title = '% pob por localidad', orientation = 'horizontal', 
+                          shape = 'rect', decreasing = FALSE, height = 20,width = 150,tickLength = 0)
+      
       #Agregar clues?
     })
     output$download_current <- downloadHandler(
