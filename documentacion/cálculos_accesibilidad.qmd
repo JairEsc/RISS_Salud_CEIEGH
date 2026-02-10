@@ -1,0 +1,362 @@
+---
+title: "Cálculos de accesibilidad"
+author: "Jaires"
+format: pdf
+editor: visual
+editor_options: 
+  chunk_output_type: console
+lightbox: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_knit$set(root.dir = "../")
+getwd()
+```
+
+```{r}
+#| message: false
+#| warning: false
+#| include: false
+library(sf) 
+source("codigos/definicion_cartografia_demografia.R") 
+local=DBI::dbConnect(RSQLite::SQLite(), "clues_en_operacion_y_limites_municipales.sqlite")
+
+clues_en_operacion=dplyr::tbl(local,"clues_en_operacion")
+```
+
+## Modelo de accesibilidad
+
+Se utilizará un modelo de accesibilidad carretera que se construye a partir de rasters de
+
+-   Modelo digital de elevación (pendiente en grados)
+
+-   Tipo de uso de suelo (clasificado por coeficiente de fricción)
+
+-   Red vial de INEGI (versión Diciembre 2025)
+
+El modelo se construye en "codigos/SIGEH_isochrone.R" y se almacena como archivo *.rds*
+
+Se carga el modelo de accesibilidad
+
+```{r}
+#| message: false
+#| warning: false
+source("codigos/SIGEH_isochrone.R")
+```
+
+Lo anterior define una matriz de transición entre píxeles de resolución 200 m, por lo que nos permite calcular rutas óptimas entre pares de puntos (píxeles) y obtener el costo (en minutos) de recorrer estas rutas.
+
+```{r}
+#| message: false
+#| warning: false
+#| include: false
+library(maptiles)
+library(tidyterra)
+library(gridExtra)
+library(slickR)
+source("../../Reutilizables/Postgres_BUIG/token_google.R")
+source("../../Reutilizables/Postgres_BUIG/token_mapbox.R")
+simular_rutas=function(semilla){##Casos interesantes: 0,100,1000
+  set.seed(semilla)
+  punto_referencia_fijo=clues_en_operacion |>  dplyr::collect() |> dplyr::sample_n(size = 2) |> dplyr::mutate(geometry= sf::st_as_sfc(structure(geometry,class = "WKB" ),EWKB=T)) |> st_as_sf() |> st_transform(32614)
+  
+  shortest_path_sigeh=gdistance::shortestPath(x = T.GC,origin =punto_referencia_fijo$geometry[1] |> unlist(),goal =c( punto_referencia_fijo$geometry[2] |> unlist() ), output="SpatialLines")
+  shortest_path_sigeh_tiempo=gdistance::costDistance(x = T.GC,fromCoords  =punto_referencia_fijo$geometry[1] |> unlist(),toCoords =c( punto_referencia_fijo$geometry[2] |> unlist() ))[1,1]
+  
+  shortest_path_osm=osrm::osrmRoute(src = punto_referencia_fijo[1,],dst = punto_referencia_fijo[2,],overview = "full")
+  shortest_path_osm_tiempo=shortest_path_osm$duration
+  shortest_path_osm=shortest_path_osm$geometry
+  
+  ##Consumos por APIs porque los formatos son raros y aún no hay APIS bonitas en R
+  lista_coords=punto_referencia_fijo$geometry |> st_transform(4326) |> unlist()
+  
+  iso.url=paste("https://api.mapbox.com/directions/v5/mapbox/driving/",lista_coords[1],"%2C",lista_coords[2],"%3B",lista_coords[3],"%2C",lista_coords[4],"?alternatives=false&geometries=geojson&overview=full&steps=false&access_token=",Sys.getenv("token_mapbox"),sep = "")
+  
+  r         <- GET(url = iso.url)
+  r.header  <- headers(r)
+  rr        <- content(r, "text")
+  rrr       <- jsonlite::fromJSON(rr )
+  rrrr=rrr$routes$geometry$coordinates |> as.data.frame()
+  rutas_muestra_sf <- st_as_sf(rrrr, coords = c("X1", "X2"), crs = 4326)
+  shortest_path_mapbox <- rutas_muestra_sf |>
+    summarise(geometry = st_combine(geometry)) |> 
+    st_cast("LINESTRING") 
+  shortest_path_mapbox_tiempo=rrr$routes$duration/60
+  
+  shortest_path_google_maps=mapsapi::mp_directions(origin = punto_referencia_fijo$geometry[1] |> st_transform(4326) |> unlist(),destination = punto_referencia_fijo$geometry[2]|> st_transform(4326) |> unlist(),key = Sys.getenv("token_google")) |> mapsapi::mp_get_routes()
+  shortest_path_google_maps_tiempo=shortest_path_google_maps$duration_s/60
+  ##Pendiente. Grafica en bonito
+    label_sigeh  <- paste0("SIGEH (", round(shortest_path_sigeh_tiempo, 1), " min)")
+  label_osm    <- paste0("Open Street Map (", round(shortest_path_osm_tiempo, 1), " min)")
+  label_mapbox <- paste0("Mapbox (", round(shortest_path_mapbox_tiempo, 1), " min)") 
+  label_google <- paste0("Google Maps (", round(shortest_path_google_maps_tiempo, 1), " min)")
+  
+  rutas_comparacion <- dplyr::bind_rows(
+    dplyr::mutate(st_as_sf(shortest_path_sigeh)  |> st_set_crs(32614) |> st_transform(4326), servicio = label_sigeh),
+    dplyr::mutate(st_as_sf(shortest_path_osm) |> dplyr::rename(geometry=x)   |> st_transform(4326), servicio = label_osm),
+    dplyr::mutate(st_as_sf(shortest_path_mapbox)|> st_transform(4326), servicio = label_mapbox),
+  dplyr::mutate(st_as_sf(shortest_path_google_maps) |> st_transform(4326), servicio = label_google)
+)
+  ggplot() +
+  # Basemap
+  geom_spatraster_rgb(data = maptiles::get_tiles(st_bbox(rutas_comparacion))) +
+  
+  geom_spatvector(data = terra::vect(rutas_comparacion), 
+                  aes(color = servicio, linetype = servicio), 
+                  linewidth = 1.2) +
+  
+  geom_spatvector(data = terra::vect(punto_referencia_fijo |> st_transform(4326)), 
+                  color = "black", fill = "yellow", shape = 23, size = 4) +
+  
+  scale_color_manual(values = setNames(
+    c("#E41A1C", "#377EB8", "#4DAF4A", "#FF7F00"),
+    c(label_sigeh, label_osm, label_mapbox, label_google)
+  )) +
+  scale_linetype_manual(values = setNames(
+    c("solid", "dashed", "solid", "dashed"),
+    c(label_sigeh, label_osm, label_mapbox, label_google)
+  )) +
+  
+  labs(
+    title = "Comparativa de Rutas y Tiempos Estimados",
+    caption = 
+  ) +
+  theme_minimal() +
+  theme(legend.position = "bottom",
+        legend.box.background = element_rect(color = "black", linewidth = 0.3))
+}
+#simular_rutas(0)
+
+```
+
+```{r}
+#| message: false
+#| warning: false
+#| include: false
+
+lista_simulaciones=list(simular_rutas(0),
+                         simular_rutas(10),
+                         simular_rutas(1000)
+                        )
+lista_plots=list()
+for(id in c(1:3)){
+    temp_file <- tempfile(fileext = ".png")
+    png(temp_file, width = 600, height = 400)
+    lista_simulaciones[[id]] |> print() 
+    ggs
+    
+    dev.off()
+    lista_plots[[id]] <- temp_file
+}
+
+
+slickR(lista_plots,width = "90%")+ 
+  settings(
+    dots = TRUE
+  )
+
+```
+
+Dado que el modelo de accesibilidad es la base de este proyecto, se describe su uso para la generación de archivos estáticos.
+
+## Cálculo de accesibilidad para CLUES y AGEBs
+
+## Demográficos
+
+Los requerimientos mínimos que debe contener el archivo es del catálogo de variables de INEGI, en este caso, con desagregación de AGEB o localidad rural con las siguientes variables
+
+-   CVEGEO, Municipio, Localidad
+
+-   POB1, POB42, POB84, POB17:POB25
+
+-   SALUD1:SALUD10
+
+En este proyecto se calcularán las siguientes variables para cada AGEB/ Localidad rural
+
+-   **Tiempo promedio a CLUES nivel** $k$ **más cercano, para** $k=1,2,3$
+
+-   **Nombre y tiempo promedio al CLUES nivel 2 más cercano**
+
+-   **Número de CLUES nivel** $k$ **a menos de** $T$ **minutos, con** $k=1,2,3$ **y** $T=10,20,40,60.$
+
+Se describirá el proceso generalizado y se concluye con la referencia al código para su implementación.
+
+Sea $A$ un polígono, que representa un AGEB o una localidad rural. Sea $k$ el nivel de atención seleccionado y consideramos $C_k$ el conjunto de CLUES en operación de nivel $k$ con el mismo sistema de georeferencia que A.
+
+```{r}
+#| message: false
+#| warning: false
+#| include: false
+##Encimamos un raster de resolución 200m y filtramos los pixeles que tienen intersección no vacía
+tiempo_zona=terra::rast("inputs/rasters/acces_CLUESN1_max90.tif")#Por ejemplo
+puntos_raster <- terra::as.points(tiempo_zona, values = TRUE, na.rm = F)
+puntos_sf <- st_as_sf(puntos_raster)
+demograficos_scince$CVEGEO |> unique() |> length()
+resultado <- st_join(puntos_sf, demograficos_scince |> 
+                       st_transform(st_crs("EPSG:32614")) |> 
+                       st_buffer(100), left = FALSE)
+resultado$CVEGEO |> unique() |> length()
+```
+
+Se calcula utilizando el modelo de accesibilidad el costo de traslado en minutos de cada pixel del estado de Hidalgo con resolución de 200m. Para este AGEB $A$, se filtran los centroides de los píxeles del raster de costo de traslado que tienen intersección no vacía con el polígono. Si la intersección fuera vacía, significa que el polígono seleccionado se encuentra por encima del límite de tiempo definido por el modelo (300 m ), que se traduce en que el AGEB seleccionado está fuera del área de cobertura.
+
+```{r}
+set.seed(1000)
+A=demograficos_scince[sample( which(nchar(demograficos_scince$CVEGEO)==13),size = 1),]
+st_area(A)
+puntos_de_ageb=resultado |> dplyr::filter(CVEGEO==A$CVEGEO)
+terra::crop(tiempo_zona,A |> st_transform(32614),touches=T,snap='out',extend=T) |> terra::project("EPSG:4326") |> plot()
+plot(A$geometry,add=T)
+plot(puntos_de_ageb$geometry |> st_transform(4326),col='red',add=T)
+##Simbología: viridis el raster, puntos rojos los que representan al AGEB, y el polígono es $A$
+```
+
+El enfoque alternativo para calcular los costos de traslado entre polígonos (AGEB) y puntos (CLUES) sería considerar el centroide del polígono, sin embargo este enfoque contaminaría los datos para los casos de AGEBs grandes en extensión territorial. Por otro lado, en el enfoque de extracción de puntos, se considera el promedio de costos de traslados entre los puntos origen (AGEB) y destino (CLUES), que se puede interpretar como un promedio de costo de traslado entre varias zonas del mismo AGEB.
+
+```{r}
+#set extent: union de los puntos de origen (puntos de agb) y destino (punto_referencia_fijo[1,])
+punto_referencia_fijo_cercano=clues_en_operacion |>  dplyr::collect() |> dplyr::mutate(geometry= sf::st_as_sfc(structure(geometry,class = "WKB" ),EWKB=T)) |> st_as_sf() |> st_transform(32614) |> 
+  dplyr::mutate(dist=st_distance(geometry,A$geometry |> st_transform(32614)))
+  
+punto_referencia_fijo_cercano=punto_referencia_fijo_cercano |> 
+  dplyr::arrange(dist)
+punto_referencia_fijo_cercano=punto_referencia_fijo_cercano[50,]###Para visualizarlo un poquito alejado del AGEB
+
+lista_shortest_paths=gdistance::shortestPath(x = T.GC,origin =puntos_de_ageb$geometry[1] |> unlist()  ,goal = punto_referencia_fijo_cercano$geometry[1] |> unlist(), output="SpatialLines")
+lista_shortest_paths_tiempo=numeric(0)
+lista_shortest_paths_tiempo[1]=gdistance::costDistance(x = T.GC,fromCoords  =puntos_de_ageb$geometry[1]|> unlist(),toCoords =c( punto_referencia_fijo_cercano$geometry[1] |> unlist() ))[1,1]
+
+lista_shortest_paths=lista_shortest_paths |> st_as_sf()
+for(i in 2:nrow(puntos_de_ageb)){
+  ruta_i=gdistance::shortestPath(x = T.GC,origin =puntos_de_ageb$geometry[i] |> unlist()  ,goal = punto_referencia_fijo_cercano$geometry[1] |> unlist(), output="SpatialLines")
+  lista_shortest_paths[nrow(lista_shortest_paths)+1,]=(ruta_i) |> st_as_sf()
+  
+  lista_shortest_paths_tiempo[i]=gdistance::costDistance(x = T.GC,fromCoords  =puntos_de_ageb$geometry[i]|> unlist(),toCoords =c( punto_referencia_fijo_cercano$geometry[1] |> unlist() ))[1,1]
+}
+
+lista_shortest_paths$color=lista_shortest_paths_tiempo
+lista_shortest_paths$geometry|> plot()
+plot(A$geometry |> st_transform(32614),add=T)
+plot(puntos_de_ageb$geometry,col='red',add=T)
+
+
+rutas_final <- lista_shortest_paths |> st_set_crs(32614) |> st_transform(4326)
+destino    <- punto_referencia_fijo_cercano |> st_set_crs(32614) |> st_transform(4326)
+origenes   <- puntos_de_ageb |> st_set_crs(32614) |> st_transform(4326)
+ageb_area  <- A |> st_transform(4326)
+
+ggplot() +
+  # Basemap
+  geom_spatraster_rgb(data = maptiles::get_tiles(st_bbox(rutas_final))) +
+  
+  # Polígono AGEB
+  geom_spatvector(data = terra::vect(ageb_area), 
+                  aes(fill = "Área AGEB"), 
+                  color = "blue", linetype = "dashed", alpha = 0.15) +
+  
+  # Rutas (Escala continua)
+  geom_spatvector(data = terra::vect(rutas_final), 
+                  aes(color = color), 
+                  linewidth = 1, alpha = 0.8) +
+  
+  # Puntos Origen (Mapeo manual para leyenda)
+  geom_spatvector(data = terra::vect(origenes), 
+                  aes(shape = "Orígenes (Viviendas)"),
+                  color = "black", fill = "black", size = 1) +
+  
+  # Punto Destino (Mapeo manual para leyenda)
+  geom_spatvector(data = terra::vect(destino), 
+                  aes(shape = "Destino (CLUES)"),
+                  color = "black", fill = "yellow", size = 4) +
+  
+  # Configuración de escalas
+  scale_color_viridis_c(option = "plasma", name = "Tiempo (min)") +
+  
+  scale_fill_manual(values = c("Área AGEB" = "blue"), name = "Polígono") +
+  
+  scale_shape_manual(values = c("Orígenes (Viviendas)" = 21, 
+                                "Destino (CLUES)" = 23), 
+                     name = "Puntos de Interés") +
+  
+  # Guías para que los puntos muestren su color de relleno correcto en la leyenda
+  guides(
+    shape = guide_legend(override.aes = list(fill = c("yellow", "black"), 
+                                            shape = c(23, 21))),
+    fill = guide_legend(override.aes = list(alpha = 0.2))
+  ) +
+  
+  labs(
+    title = "Costo traslado AGEB-CLUES",
+    subtitle = "Simulación de rutas para un mismo AGEB desde diferentes zonas",
+    x = NULL, y = NULL
+  ) +
+  theme_minimal() +
+  theme(legend.position = "right",
+        legend.background = element_rect(fill = "white", color = "grey80"))
+```
+
+Lo anterior se repite para cada CLUES lo cual define una matriz de costos de dimensión \$\|C_k\|\\times \|puntos(AGEB)\| \$. De esta matriz podemos extraer información valiosa que corresponde a:
+
+-   Tiempo a CLUES nivel $k$ más cercano, que corresponde al mínimo de los promedios de los renglones.
+
+-   Número de CLUES nivel $k$ a menos de $T$ minutos, que corresponde al número de elementos del vector definido por el promedio de renglones que satisface ser menor a $T$.
+
+-   Cuando $k=2$, se conserva el índice del elemento mínimo de la suma por renglones, pues corresponde al hospital más cercano.
+
+## CLUES
+
+Los requerimientos mínimos que debe contener el archivo provisto por Salud son
+
+-   CLUES (código único)
+
+-   Nivel de atención (1er nivel, 2do nivel o 3er nivel)
+
+-   Georeferenciación (lat+lon / geometry) y una referencia al sistema utilizado (E.g. EPSG:4326)
+
+En este proyecto se calcularán las siguientes variables para cada CLUES
+
+-   **Número de CLUES de tipo** $k$ **a menos de** $T$ **minutos, con** $k=1,2,3$ **y** $T=10,20,40,60.$
+
+-   **Tiempo promedio al CLUES de nivel** $k$ **más cercano, con** $k=1,2,3$**.**
+
+-   **Nombre y CLUES nivel** $k$ **más cercano, con** $k=1,2,3.$
+
+-   **Estimaciones de población en rangos de tiempo** $T$**, con** $T=10,20,40,60.$
+
+Sea $C$ el conjunto de CLUES en operación de cualquier nivel de atención.
+
+A través del modelo de accesibilidad se construye una matriz de costos de traslado de CLUES a CLUES.
+
+Notemos que si $n$ es el número de renglones de esta matriz de costos, entonces $n=|C_1|+|C_2|+|C_3|$ y la matriz de costos $M$ contiene 3 bloques en la diagonal correspondiente a los costos de accesibilidad entre CLUES de nivel $k$, con $k=1,2,3$, mientras que fuera de la diagonal se encuentran los costos entre CLUES de niveles $i$, $j$ con $i\neq j$.
+
+Con esto en mente, podemos dividir cada renglón en 3 sub-renglónes de longitudes correspondientes al número de CLUES de cada nivel de atención $k$
+
+$$
+\text{Renglón i-ésimo} =(\underbrace{M_{i,1},M_{i,2},\ldots,M_{i,|C_{1}|}}_{\text{Costos de traslado desde i a CLUES de nivel 1}},\overbrace{M_{i,1+|C_{1}|},\ldots,M_{i,|C_2|+|C_{1}|}}^{\text{Costos de traslado desde i a CLUES de nivel 2}},\underbrace{\ldots,M_{i,|C_3|+|C_2|+|C_{1}|}}_{\text{Costos de traslado desde i a CLUES de nivel 3}})
+$$
+
+Cada sub-renglón corresponde a los costos de traslado del CLUES seleccionado hacia los diferentes CLUES separados por nivel de atención, de manera que de estos sub-renglones es suficiente para calcular:
+
+-   El número de CLUES de nivel $k$ a menos de $T$ minutos, que corresponde a calcular el número de elementos de cada sub-renglón que es menor a $T$.
+
+-   Tiempo promedio al CLUES de nivel $k$ más cercano, que corresponde al mínimo de cada sub-renglón. Naturalmente, cuando el CLUES seleccionado y el sub-renglón corresponden al mismo nivel de atención, tomamos el segundo mínimo.
+
+-   De conservar el índice del mínimo de cada sub-renglón o del segundo mínimo según sea el caso, éste corresponde al CLUES más cercano.
+
+Para la estimaciones de población en un rango de tiempo $T$, se consideran los polígonos de AGEBs y localidades rurales, y con el método para raster "extract", se extrae el conjunto de píxeles que lo cubren y se guarda la proporción de cobertura de los píxeles respecto a la totalidad del AGEB. Por ejemplo, un AGEB podría tener una cobertura de 25% con un valor de 5 minutos, además de un 75% de cobertura con un calor de 5.5 minutos, con lo que se construirá una estimación que involucra al 100% de la población del AGEB.
+
+```{r}
+tiempo_zona_individual=gdistance::accCost(x = T.GC,punto_referencia_fijo_cercano$geometry |> unlist())
+tiempo_zona_individual_croped=terra::crop(tiempo_zona_individual,y = A |> st_transform(32614) |> st_buffer(100)) |> terra::rast()
+tiempo_zona_individual_croped  |> plot()
+plot(A$geometry |> st_transform(32614) ,add=T)
+#+hist
+A_extract=exactextractr::exact_extract(tiempo_zona_individual_croped,A |> st_transform(32614),'frac' )
+plot(gsub("frac_","",colnames(A_extract)) |> as.numeric(),A_extract[1,],"l")
+#Pendiente hacerlo en bonito
+```
+
+##### pendiente. Dibujito de la cobertura de un polígono coloreado con el costo de traslado a un CLUES
+
+De lo anterior se define una densidad de cobertura con peso igual al costo de traslado. La suma por rangos de tiempo de los AGEBs involucrados definiría las estimaciones de población por rangos de tiempo.

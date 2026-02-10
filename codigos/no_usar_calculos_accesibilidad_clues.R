@@ -15,7 +15,7 @@ clues_N2=(clues_en_operacion |> dplyr::filter(NIVEL.ATENCION=='SEGUNDO NIVEL') |
   dplyr::mutate(geometry=st_as_sfc(geometry)) )
 
 distancia_entre_cluesN2=gdistance::costDistance(T.GC,fromCoords = 
-                          matrix(unlist(clues_N2$geometry|> st_transform(32614) ),nrow = nrow(clues_N2),ncol = 2,byrow = T)
+                          matrix(unlist(clues_N2$geometry|> st_transform(32614)),nrow = nrow(clues_N2),ncol = 2,byrow = T)
                         ,toCoords = 
                           matrix(unlist(clues_N2$geometry |> st_transform(32614)),nrow = nrow(clues_N2),ncol = 2,byrow = T)
 )

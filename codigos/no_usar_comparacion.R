@@ -15,9 +15,10 @@ T2=c(50,100,150,200)
   #osm
 iso1_osm=punto_referencia_fijo |> osrmIsochrone(breaks = T1,res = 30,##Resolucion de OSM. 100 es el máximo pero tarda como 5 minutos
                                                 osrm.profile = "car")
+osrm::osrmRoute(src = punto_referencia_fijo[1,],dst = punto_referencia_fijo[2,],overview = "full")$geometry |> plot() 
 #plot(iso1_osm)
   #mapbox
-#source("../../Reutilizables/Postgres_BUIG/token_mapbox.R")
+source("../../Reutilizables/Postgres_BUIG/token_mapbox.R")
 
 iso1_mapbox=getIsochrones_mapbox(coord = punto_referencia_fijo |> unlist() |> paste(collapse = ","),
                      times =T1 )
