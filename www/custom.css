@@ -36,6 +36,10 @@ body {
 .content-wrapper {
     background-color: #ffffff;
 }
+.content{
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+}
 
 .map-box {
     border-radius: 14px;
@@ -48,6 +52,8 @@ body {
 .main-sidebar {
         background-color: #1f2933 !important;
         border-right: 1px solid rgba(255,255,255,0.03);
+        padding-top: 100px;
+  
 }
 .main-header .logo{
   width: 100vw;

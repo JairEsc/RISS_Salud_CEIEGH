@@ -133,7 +133,6 @@ estadisticas_dado_nivel_atencion_y_tiempo=function(nivel,tiempo){
     dplyr::filter((tiempo_promedio_clues_N1_mas_cercano > tiempo)& 
                     (tiempo_promedio_clues_N2_mas_cercano> tiempo) &
                     (tiempo_promedio_clues_N3_mas_cercano>tiempo))}
-  lista_agebs=lista_agebs 
   conteo_por_localidad=lista_agebs |> 
     sf::st_drop_geometry() |> 
     dplyr::group_by(NOM_MUN,NOMGEO) |> 
@@ -167,15 +166,16 @@ estadisticas_dado_nivel_atencion_y_tiempo=function(nivel,tiempo){
       tiempo_promedio_CLUES_N1=round(tiempo_promedio_clues_N1_mas_cercano,1),
       tiempo_promedio_CLUES_N2=round(tiempo_promedio_clues_N2_mas_cercano,1),
       tiempo_promedio_CLUES_N3=round(tiempo_promedio_clues_N3_mas_cercano,1)
-    )
+    ) |> dplyr::relocate(POB_rel,.after = dplyr::last_col())
   conteo_por_localidad=conteo_por_localidad |> 
     dplyr::arrange(dplyr::desc(POB1)) |> 
-    dplyr::select(NOM_MUN,NOMGEO,POB1,SALUD1,tiempo_promedio_clues_N1_mas_cercano,tiempo_promedio_clues_N2_mas_cercano,tiempo_promedio_clues_N3_mas_cercano) |> 
+    dplyr::select(NOM_MUN,NOMGEO,POB1,SALUD1,,tiempo_promedio_clues_N1_mas_cercano,tiempo_promedio_clues_N2_mas_cercano,tiempo_promedio_clues_N3_mas_cercano) |> 
     dplyr::mutate(
       tiempo_promedio_CLUES_N1=round(tiempo_promedio_clues_N1_mas_cercano,1),
       tiempo_promedio_CLUES_N2=round(tiempo_promedio_clues_N2_mas_cercano,1),
       tiempo_promedio_CLUES_N3=round(tiempo_promedio_clues_N3_mas_cercano,1)
-    )
+    ) |> 
+   dplyr::select(-tiempo_promedio_clues_N1_mas_cercano,-tiempo_promedio_clues_N2_mas_cercano,-tiempo_promedio_clues_N3_mas_cercano)
   conteo_por_municipio=conteo_por_municipio|> 
     dplyr::arrange(dplyr::desc(POB1)) |> 
     dplyr::select(NOM_MUN,POB1,SALUD1,tiempo_promedio_clues_N1_mas_cercano,tiempo_promedio_clues_N2_mas_cercano,tiempo_promedio_clues_N3_mas_cercano) |> 
@@ -183,7 +183,7 @@ estadisticas_dado_nivel_atencion_y_tiempo=function(nivel,tiempo){
       tiempo_promedio_CLUES_N1=round(tiempo_promedio_clues_N1_mas_cercano,1),
       tiempo_promedio_CLUES_N2=round(tiempo_promedio_clues_N2_mas_cercano,1),
       tiempo_promedio_CLUES_N3=round(tiempo_promedio_clues_N3_mas_cercano,1)
-    )
+    ) |> dplyr::select(-tiempo_promedio_clues_N1_mas_cercano,-tiempo_promedio_clues_N2_mas_cercano,-tiempo_promedio_clues_N3_mas_cercano)
   popupsContents=generadorPopUpContentDemog(lista_agebs)
   return(list(lista_agebs,conteo_por_localidad,conteo_por_municipio,popupsContents))
 }

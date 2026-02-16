@@ -102,9 +102,9 @@ salud a nivel estatal",disable = F),
     tabItems(
       tabItem(tabName = "map",
           fluidRow(
-            div(style = "display: flex; justify-content: center; align-items: center; gap: 20px; padding: 10px; height: 10vh;",
+            div(style = "display: flex; justify-content: center; align-items: center; gap: 20px; padding: 0px; height: 8vh;",
           img(src = "images/Logotipo1.png", style = "max-height: 100%; max-width: 35%; object-fit: contain;"),
-          img(src = "images/Logotipo armas7.png", style = "max-height: 100%; max-width: 35%; object-fit: contain;")
+          img(src = "images/Logotipo armas7.png", style = "max-height: 100%; max-width: 55%; object-fit: contain;")
             )
           ),
           fluidRow(

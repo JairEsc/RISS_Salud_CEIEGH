@@ -87,9 +87,9 @@ tabStatsServer <- function(id, nivel_at) {
                 rownames = FALSE, class = 'cell-border stripe',
                 colnames = c('Municipio'='NOM_MUN','Población Total'='POB1',
                              'Población Afiliada a SS'='SALUD1',
-                             'Tiempo promedio a CLUES N1'='tiempo_promedio_clues_N1_mas_cercano',
-                             'Tiempo promedio a CLUES N2'='tiempo_promedio_clues_N2_mas_cercano',
-                             'Tiempo promedio a CLUES N3'='tiempo_promedio_clues_N3_mas_cercano'))
+                             'Tiempo promedio a CLUES N1'='tiempo_promedio_CLUES_N1',
+                             'Tiempo promedio a CLUES N2'='tiempo_promedio_CLUES_N2',
+                             'Tiempo promedio a CLUES N3'='tiempo_promedio_CLUES_N3'))
     })
     output$tabla_loc  <- DT::renderDT({
       datatable(listas_estadisticas()[[2]], 
@@ -97,9 +97,9 @@ tabStatsServer <- function(id, nivel_at) {
                                language = list(url = '//cdn.datatables.net/plug-ins/1.10.11/i18n/Spanish.json')),
                 rownames = FALSE, class = 'cell-border stripe',
                 colnames = c('Municipio'='NOM_MUN','Localidad'='NOMGEO','Población Total'='POB1',
-                             'Población Afiliada a SS'='SALUD1','Tiempo promedio a CLUES N1'='tiempo_promedio_clues_N1_mas_cercano',
-                             'Tiempo promedio a CLUES N2'='tiempo_promedio_clues_N2_mas_cercano',
-                             'Tiempo promedio a CLUES N3'='tiempo_promedio_clues_N3_mas_cercano'))
+                             'Población Afiliada a SS'='SALUD1','Tiempo promedio a CLUES N1'='tiempo_promedio_CLUES_N1',
+                             'Tiempo promedio a CLUES N2'='tiempo_promedio_CLUES_N2',
+                             'Tiempo promedio a CLUES N3'='tiempo_promedio_CLUES_N3'))
     })
     output$tabla_ageb <- DT::renderDT({
       datatable(listas_estadisticas()[[1]] |> st_drop_geometry(), 
@@ -108,9 +108,9 @@ tabStatsServer <- function(id, nivel_at) {
                 rownames = FALSE, class = 'cell-border stripe',
                 colnames = c('Municipio'='NOM_MUN','Localidad'='NOMGEO','Población Total'='POB1','Población Hombres'='POB42',
                              'Población Mujeres'='POB84',
-                             'Población Afiliada a SS'='SALUD1','Tiempo promedio a CLUES N1'='tiempo_promedio_clues_N1_mas_cercano',
-                             'Tiempo promedio a CLUES N2'='tiempo_promedio_clues_N2_mas_cercano',
-                             'Tiempo promedio a CLUES N3'='tiempo_promedio_clues_N3_mas_cercano',
+                             'Población Afiliada a SS'='SALUD1','Tiempo promedio a CLUES N1'='tiempo_promedio_CLUES_N1',
+                             'Tiempo promedio a CLUES N2'='tiempo_promedio_CLUES_N2',
+                             'Tiempo promedio a CLUES N3'='tiempo_promedio_CLUES_N3',
                              
                              'CLUES N1 más cercano'='id_clues_N1_mas_cercano','Nombre del CLUES N1 más cercano'='nombre_clues_N1_mas_cercano',
                              'CLUES N2 más cercano'='id_clues_N2_mas_cercano','Nombre del CLUES N2 más cercano'='nombre_clues_N2_mas_cercano',
