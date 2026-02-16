@@ -4,6 +4,6 @@ inputs/*
 !inputs/accesibilidad_SIGEH/
 inputs/accesibilidad_SIGEH/hidalgo
 .R*
-codigos/token_mapbox.R
-codigos/conexion_supabase.R
+codigos/deprecated/token_mapbox.R
+codigos/deprecated/conexion_supabase.R
 rsconnect/*
