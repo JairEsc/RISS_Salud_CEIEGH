@@ -67,14 +67,13 @@ generadorPopUpContentCLUES=function(poligono){
 #Cuando la información censal esn confidencial (-6 o -8), modificar el formato para reflejarlo
 AccesibilidadPoligono=function(poligono,leaflet_proxy='mapa_principal'){
   centroide=st_centroid(poligono)
-  print("centroide:")
-  
+
   ##Clave, Nombre de localidad, Nombre de municipio. 
   #Pob Total. Pob Afiliada. Piramide poblacional. Distribución de afiliación. 
   ##Tiempo promedio a CLUES de nivel 1
   ##Tiempo promedio a CLUES de nivel 2 y nombre de la más cercana
   popup_content <- generadorPopUpContentDemog(poligono)
-  print(poligono)
+  #print(poligono)
   if(poligono$POB1==0){
     popup_content<-"Asegúrate de que la capa de AGEBs y localidades rurales esté activa y que la región seleccionada por ti contenga al menos uno de ellos"
   }
@@ -131,9 +130,9 @@ estadisticas_dado_nivel_atencion_y_tiempo=function(nivel,tiempo){
     lista_agebs=lista_agebs|> 
       dplyr::filter(tiempo_promedio_clues_N3_mas_cercano > tiempo)
   } else{lista_agebs=lista_agebs|> 
-    dplyr::filter(tiempo_promedio_clues_N1_mas_cercano > tiempo|| 
-                    tiempo_promedio_clues_N2_mas_cercano> tiempo ||
-                    tiempo_promedio_clues_N3_mas_cercano>tiempo)}
+    dplyr::filter((tiempo_promedio_clues_N1_mas_cercano > tiempo)& 
+                    (tiempo_promedio_clues_N2_mas_cercano> tiempo) &
+                    (tiempo_promedio_clues_N3_mas_cercano>tiempo))}
   lista_agebs=lista_agebs 
   conteo_por_localidad=lista_agebs |> 
     sf::st_drop_geometry() |> 

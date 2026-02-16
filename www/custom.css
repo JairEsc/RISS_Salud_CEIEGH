@@ -49,7 +49,15 @@ body {
         background-color: #1f2933 !important;
         border-right: 1px solid rgba(255,255,255,0.03);
 }
-
+.main-header .logo{
+  width: 100vw;
+  float: none;
+  background-color: #333 !important;
+  color: #fff !important;
+}
+.main-header .navbar {
+    margin: 0 !important;
+}
 .sidebar-menu li a {
         border-radius: 0 20px 20px 0;
         margin-right: 8px;

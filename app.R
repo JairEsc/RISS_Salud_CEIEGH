@@ -55,7 +55,8 @@ paleta_spectral_comun=colorNumeric(palette = "Spectral",domain = c(10,20,40,60,9
 
 ui <- dashboardPage(
   skin = "black",
-  dashboardHeader(title = "RISS",disable = F),
+  dashboardHeader(title = "Visualizador de la accesibilidad y cobertura de la infraestructura de
+salud a nivel estatal",disable = F),
   
   shinydashboardPlus::dashboardSidebar(
     tags$head(
@@ -65,7 +66,8 @@ ui <- dashboardPage(
       tags$style(HTML(leaflet_legend_css))
     ),
     tags$head(
-      tags$style(HTML(sidebar_last_child_css))),
+      tags$style(HTML(sidebar_last_child_css))
+    ),
     uiOutput("userpanel"),
     
     div(class = "sidebar-controls",
@@ -75,13 +77,11 @@ ui <- dashboardPage(
                       choices = c("1er nivel" = "PRIMER NIVEL",
                                   "2do nivel" = "SEGUNDO NIVEL",
                                   "3er nivel" = "TERCER NIVEL",
-                                  "Todos los niveles"='CUALQUIER NIVEL'),##Todos los niveles?
+                                  "Todos los niveles"='CUALQUIER NIVEL'),
                       selectize = TRUE,selected ="SEGUNDO NIVEL" )
         )
-    )
-    ,shinyjs::useShinyjs(),
-    
-        
+    ),
+    shinyjs::useShinyjs(),
     
     tags$style(HTML(tour_button_css)),
     sidebarMenu(
@@ -93,12 +93,12 @@ ui <- dashboardPage(
       div(style = "padding: 10px;",
           actionButton("start_tour", "Explicación", class="btn-primary", width="100%",, icon = icon("question-circle"))
       )
-    )
-    ,collapsed = F,minified = F
+    ),
+    collapsed = F,minified = F
   ),
   
   dashboardBody(
-    introjsUI(),##Para el Tour
+    introjsUI(),
     tabItems(
       tabItem(tabName = "map",
           fluidRow(
@@ -195,7 +195,7 @@ shinyApp(ui, function(input, output,session) {
           group="AGEBs",layerId = paste0("AGEBs",1:nrow(demograficos_scince)))
       }
       else{
-        print(input$agebs)
+        #print(input$agebs)
         leafletProxy("mapa_principal") |>
           removeShape(paste0("AGEBs",1:nrow(demograficos_scince)))
       }
@@ -204,11 +204,11 @@ shinyApp(ui, function(input, output,session) {
 
   lista_objetos_especiales <- reactiveVal(value = 0)##Especiales son los que se dibujan. No necesito la lista, nomás saber si está vacía
   
-  observeEvent(input$mapa_principal_marker_click,{#2
-    datos_del_clues=clues_solicitadosss$df |> 
-      dplyr::filter(dplyr::row_number() == as.numeric(gsub("CLUES","",input$mapa_principal_marker_click$id) )) 
+  observeEvent(input$mapa_principal_marker_click,{# Click sobre un clues
+    datos_del_clues=clues_solicitadosss$df |> ##Estamos conservando todas las columnas del CLUEs aunque no todas se muestran
+      dplyr::filter(dplyr::row_number() == as.numeric(gsub("CLUES","",input$mapa_principal_marker_click$id) )) ##Datos del clues seleccionado
     punto_referencia_fijo=st_point(c(input$mapa_principal_marker_click$lng ,input$mapa_principal_marker_click$lat)) |> st_sfc(crs = 4326)
-    print(punto_referencia_fijo)
+    #print(punto_referencia_fijo)
     #isocronas_niveles_fijos=getIsochrones_mapbox(coord = punto_referencia_fijo |> unlist() |> paste(collapse = ","),
     #                                             times =c(10,20,40,60) ) |> st_as_sf() |> st_transform(st_crs("EPSG:4326"))
     isocronas_niveles_fijos <- tryCatch({
@@ -217,11 +217,11 @@ shinyApp(ui, function(input, output,session) {
     contornos <- raster::rasterToContour(res_raster, levels = 10 * c(1:9)) |> 
       st_as_sf() |> 
       st_set_crs(st_crs("EPSG:32614"))
-    print(contornos)
+    #print(contornos)
     contornos 
     }, error = function(e) {
       message("Error en accCost: Generando círculos concéntricos como respaldo.")
-      punto_proyectado <- punto_referencia_fijo |> st_transform(st_crs("EPSG:32614"))
+      punto_proyectado = punto_referencia_fijo |> st_transform(st_crs("EPSG:32614"))
       # Creamos una secuencia de radios
       radios <- seq(100, 2500, by = 300)
       circulos <- do.call(rbind, lapply(radios, function(r) {
@@ -273,7 +273,7 @@ shinyApp(ui, function(input, output,session) {
   })
   observe({
     if ("CLUES" %in% input$mapa_principal_groups & input$nivel_at=='CUALQUIER NIVEL') {
-      print("Sí se muestra el legend de clues")
+      #print("Sí se muestra el legend de clues")
       leafletProxy("mapa_principal") |> 
             addLegend(
               position = "bottomleft",
@@ -318,14 +318,14 @@ shinyApp(ui, function(input, output,session) {
   #   
   observeEvent(input$mapa_principal_shape_click,{
     ###Solamente si es click sobre un ageb. 
-    print(input$mapa_principal_shape_click)
+    #print(input$mapa_principal_shape_click)
     if(!is.null(input$mapa_principal_shape_click$id)){
-      print("id-------------")
-      print(input$mapa_principal_shape_click$id)
+      #print("id-------------")
+      #print(input$mapa_principal_shape_click$id)
       if(grepl(pattern = "AGEB",x = input$mapa_principal_shape_click$id) ){
         
         poligono=demograficos_scince[as.numeric(gsub("AGEBs","",input$mapa_principal_shape_click$id)),]
-        AccesibilidadPoligono(poligono)
+        AccesibilidadPoligono(poligono)##Se mandan todas las columnas aunque no se muestran todas
 
       }
     }
@@ -342,11 +342,11 @@ shinyApp(ui, function(input, output,session) {
     n_poligonos_involucrados=interseccion_agebs |> nrow()
     ##Resumir las intersecciones como la suma
     data_c_geo=data |> dplyr::bind_cols( interseccion_agebs |>
-                               dplyr::select(POB1:SALUD10,CVEGEO,NOM_MUN:NOMGEO,CLUES_N1_10:nombre_clues_N3_mas_cercano) |>  
+                               dplyr::select(POB1:SALUD10,CVEGEO,NOM_MUN:NOMGEO,CLUES_N1_10:nombre_clues_N3_mas_cercano) |> ##Aquí sí se eligen menos coluumnas 
                                  st_drop_geometry() |> 
                                dplyr::mutate(dplyr::across(dplyr::everything(), ~ ifelse(.x < 0, NA, .x)
                                                            )) |> 
-                                 dplyr::summarise_all(.funs = \(x){ifelse(is.character(x),paste0(unique(x),collapse = ", "),sum(x,na.rm=T))}) ) |> 
+                                 dplyr::summarise_all(.funs = \(x){ifelse(is.character(x),paste0(unique(x),collapse = ", "),sum(x,na.rm=T))}) ) |> ##Suna o concat según el tipo de la variable
       dplyr::mutate(
         tiempo_promedio_CLUES_N1=tiempo_promedio_clues_N1_mas_cercano/n_poligonos_involucrados,
         tiempo_promedio_CLUES_N2=tiempo_promedio_clues_N2_mas_cercano/n_poligonos_involucrados,

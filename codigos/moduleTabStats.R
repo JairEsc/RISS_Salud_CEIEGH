@@ -148,9 +148,7 @@ tabStatsServer <- function(id, nivel_at) {
       pal <- colorNumeric(palette = "YlOrRd", domain = c(0, 
                                                          max(c(0,max(listas_estadisticas()[[1]]$POB_rel))
                                                          )))##El máximo de un conjunto vacío es -Inf, por eso tomamos el máximo
-      print(seq.int(0, 
-                  max(c(0,max(listas_estadisticas()[[1]]$POB_rel))
-                  ),length.out = 5))
+
       leafletProxy("mapa_stats", session = session) |>
         clearShapes() |>
         clearControls() |> 
