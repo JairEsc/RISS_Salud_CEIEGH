@@ -44,7 +44,7 @@ source("codigos/definicion_cartografia_demografia.R")
 source("codigos/definicion_custom_markers.R")
 source("codigos/moduleTabStats.R")
 source("codigos/extras_css.R")
-local=DBI::dbConnect(RSQLite::SQLite(), "clues_en_operacion_y_limites_municipales.sqlite")
+local=DBI::dbConnect(RSQLite::SQLite(), "clues_demograficos_municipios.sqlite")
 clues_en_operacion=dplyr::tbl(local,"clues_en_operacion")
 limites_municipales=sf::st_read(local,"limite_municipal")
 
@@ -146,7 +146,7 @@ shinyApp(ui, function(input, output,session) {
   observeEvent(input_nivel_at_d(),
     {
       clues_solicitados=clues_en_operacion |> dplyr::filter(NIVEL.ATENCION==input$nivel_at | input$nivel_at=="CUALQUIER NIVEL" ) |> 
-        dplyr::select(CLUES,MUNICIPIO,LOCALIDAD,NOMBRE.DE.LA.UNIDAD,NIVEL.ATENCION,CLUESN2_mas_cercana:num_CLUESN1T10,geometry) |>
+        dplyr::select(CLUES,MUNICIPIO,LOCALIDAD,NOMBRE.DE.LA.UNIDAD,NIVEL.ATENCION,Conteo_N1_T10:SALUD10_T60,geometry) |>
         dplyr::collect() |> 
         dplyr::mutate(geometry= sf::st_as_sfc(structure(geometry,class = "WKB" ),EWKB=T)) |> st_as_sf()
       clues_solicitadosss$df=clues_solicitados
@@ -208,15 +208,16 @@ shinyApp(ui, function(input, output,session) {
     datos_del_clues=clues_solicitadosss$df |> 
       dplyr::filter(dplyr::row_number() == as.numeric(gsub("CLUES","",input$mapa_principal_marker_click$id) )) 
     punto_referencia_fijo=st_point(c(input$mapa_principal_marker_click$lng ,input$mapa_principal_marker_click$lat)) |> st_sfc(crs = 4326)
+    print(punto_referencia_fijo)
     #isocronas_niveles_fijos=getIsochrones_mapbox(coord = punto_referencia_fijo |> unlist() |> paste(collapse = ","),
     #                                             times =c(10,20,40,60) ) |> st_as_sf() |> st_transform(st_crs("EPSG:4326"))
     isocronas_niveles_fijos <- tryCatch({
-      res_raster <- accCost(T.GC, punto_referencia_fijo |> st_transform(st_crs("EPSG:32614")) |> unlist())
+      res_raster <- gdistance::accCost(T.GC, punto_referencia_fijo |> st_transform(st_crs("EPSG:32614")) |> unlist())
       
     contornos <- raster::rasterToContour(res_raster, levels = 10 * c(1:9)) |> 
       st_as_sf() |> 
       st_set_crs(st_crs("EPSG:32614"))
-      
+    print(contornos)
     contornos 
     }, error = function(e) {
       message("Error en accCost: Generando círculos concéntricos como respaldo.")
@@ -339,16 +340,17 @@ shinyApp(ui, function(input, output,session) {
     ##Se estima la accesibilidad a CLUES por rangos
     interseccion_agebs=st_intersection(demograficos_scince,y = data)
     n_poligonos_involucrados=interseccion_agebs |> nrow()
-    ##Resumir las intersecciones como la suma.
-    data_c_geo=data |> dplyr::bind_cols( interseccion_agebs |> 
-                               dplyr::select(POB1:SALUD10,CVEGEO,NOM_MUN:NOMGEO,tiempo_promedio_CLUES_N1:tiempo_promedio_CLUES_N2,CLUES:NOMBRE.DE.LA.UNIDAD) |>  
+    ##Resumir las intersecciones como la suma
+    data_c_geo=data |> dplyr::bind_cols( interseccion_agebs |>
+                               dplyr::select(POB1:SALUD10,CVEGEO,NOM_MUN:NOMGEO,CLUES_N1_10:nombre_clues_N3_mas_cercano) |>  
                                  st_drop_geometry() |> 
                                dplyr::mutate(dplyr::across(dplyr::everything(), ~ ifelse(.x < 0, NA, .x)
                                                            )) |> 
                                  dplyr::summarise_all(.funs = \(x){ifelse(is.character(x),paste0(unique(x),collapse = ", "),sum(x,na.rm=T))}) ) |> 
       dplyr::mutate(
-        tiempo_promedio_CLUES_N1=tiempo_promedio_CLUES_N1/n_poligonos_involucrados,
-        tiempo_promedio_CLUES_N2=tiempo_promedio_CLUES_N2/n_poligonos_involucrados,
+        tiempo_promedio_CLUES_N1=tiempo_promedio_clues_N1_mas_cercano/n_poligonos_involucrados,
+        tiempo_promedio_CLUES_N2=tiempo_promedio_clues_N2_mas_cercano/n_poligonos_involucrados,
+        tiempo_promedio_CLUES_N3=tiempo_promedio_clues_N3_mas_cercano/n_poligonos_involucrados
                     )
       
     ##Se reutiliza el método de arriba con este polígono nuevo.

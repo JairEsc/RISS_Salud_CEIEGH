@@ -1,11 +1,19 @@
-# #Código mínimo para modelo de fricción
-# library(raster)
+#Código mínimo para modelo de fricción
+library(raster)
 # uso_de_suelo=raster("inputs/accesibilidad_SIGEH/uso_de_suelo_friccion.tif")
 # pendiente=raster("inputs/accesibilidad_SIGEH/pendiente.tif")
-# carreteras=raster("inputs/accesibilidad_SIGEH/carreteras.tif")
+# carreteras=raster("../../Reutilizables/red vial carreteras inegi/red_vial_crop_HGO_rasterized_terra.tif")
+# carreteras_shp=st_read("../../Reutilizables/red vial carreteras inegi/red_vial_crop_HGO.shp") |> st_transform(32614)
+# carreteras=terra::rasterize(carreteras_shp |> dplyr::mutate(VELOCIDAD=as.numeric(VELOCIDAD)),pendiente,field='VELOCIDAD',fun=mean)
+# terra::writeRaster(carreteras,"../../Reutilizables/red vial carreteras inegi/red_vial_crop_HGO_rasterized_terra.tif")
 # #Sí me voy a tomar la libertad de actualizar los valores del raster que estén cerca de 90 grados
-# pendiente[pendiente<120 & pendiente>=90]=120
-# pendiente[pendiente<=90 & pendiente>50]=50
+# plot(carreteras)
+# uso_de_suelo[is.na(uso_de_suelo)]=mean(terra::values(uso_de_suelo),na.rm=T)
+# plot(uso_de_suelo)
+# pendiente[pendiente<135 & pendiente>=90]=135
+# pendiente[pendiente<=90 & pendiente>45]=45
+# pendiente[is.na(pendiente)]=mean(terra::values(pendiente),na.rm=T)
+# plot(pendiente)
 # ####Accesibilidad a pie
 # slp_walk = 6 * exp(-0.4 * abs(tan(pendiente * pi / 180) + 0.05))  # Calcula la velocidad de caminata ajustada por la pendiente.
 # #plot(-90:90,6*exp(-0.4*abs(tan(-90:90*pi/180)))+0.05,'l',ylab='Velocidad km/h',main='Velocidad caminando en función de la pendiente',xlab='Grados')
@@ -19,18 +27,18 @@
 # 
 # merged_spd = merge(sloped_road_spd, terrain_walk_spd)     # Combina los rasters de velocidad de carreteras y terreno.
 # 
-# friction = 1.0 / (merged_spd * 1000 / 60.0 ) 
+# friction = 1.0 / (merged_spd * 1000 / 60.0 )
 # #friction_4326=projectRaster(friction)
-library(gdistance)
+# library(gdistance)
 # Trans = transition(friction, function(x) 1 / mean(x), 8)  # Crea una matriz de transición basada en la fricción.
-# T.GC = geoCorrection(Trans, type="c") 
+# T.GC = geoCorrection(Trans, type="c")
 # 
 # # hidalgo=st_read("inputs/accesibilidad_SIGEH/hidalgo/LIM_MUNICIPALES.shp")
 # # n=15
 # # lugares_destino_ficticios=st_sample(hidalgo$geometry,n)
 # # tiempo_zona = accCost(T.GC, matrix(unlist(lugares_destino_ficticios),nrow = n,ncol = 2,byrow = T))  # Calcula el costo acumulado desde un punto de inicio (coordenadas especificadas) usando la matriz de transición corregida (T.GC).
-# # plot(tiempo_zona)
-# # plot(lugares_destino_ficticios,add=T)
+# # tiempo_zona[tiempo_zona>200]=NA
+# 
 # #accCost(T.GC, st_point(c(-98.5,20)) |> st_sfc(crs = 4326) |> st_transform(32614) |> unlist() ) |> plot()
 # 
 # saveRDS(object = T.GC, file = "inputs/accesibilidad_SIGEH/accesibilidad_carretera.rds")

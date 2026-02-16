@@ -1,4 +1,4 @@
-demograficos_scince=st_read("outputs/demograficos_info_accesibilidad_provisional.geojson")
+demograficos_scince=st_read("outputs/demograficos_con_info_accesibilidad.geojson")
 ##único vectorial con cartografia
 ##
 ##CVEGEO
