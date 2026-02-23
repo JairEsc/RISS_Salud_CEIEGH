@@ -3,16 +3,15 @@
 Hasta ahora, se establece periodicidad anual o semestral las actualizaciones de: 
     - CLUES (Georeferenciados)
     - Capacidad de Atención 
-Por definirse, la actualización de los AGEBs, Localidades Urbanas y Rurales (Esta versión utiliza marco geoestadístico de INEGI, dic. 2020 (se considerò utilizar 2025 pero hay que hacer match entre demográficos 2020 y cartográficos 2025))
+Por definirse, la actualización de los AGEBs, Localidades Urbanas y Rurales (Esta versión utiliza marco geoestadístico de INEGI, dic. 2020 (se consideró utilizar 2025 pero hay que hacer match entre demográficos 2020 y cartográficos 2025))
 
 ## Procesos
 
     - Construcción única de modelo de accesibilidad carretera (Isocronas SIGEH).
     - Incorporación de API (mapbox) para la consulta de isocronas a niveles fijos (10,20,40,60) de puntos variables (CLUES / agebs). --Se excluye por simplicidad.
     - Ejecución única de códigos: 
-      -no_usar_calculos_accesibilidad_agebs.R -> (demograficos_info_accesibilidad.geojson)
-      -no_usar_calculos_accesibilidad_clues.R -> (clues_Nk_info_accesibilidad.geojson)
-      -no_usar_calculos_rasters_accesibilidad.R -> (acces_CLUES_nk_max90.tif)
+      -no_usar_calculos_accesibilidad_clues.R 
+      -no_usar_calculos_rasters_accesibilidad.R 
  
 *pendiente*: Cálculo de número de personas a más de X minutos -> Tab estadísticas
     Resumen. Se toman 3 cartografías del marco geostadístico de INEGI
@@ -35,13 +34,13 @@ Por definirse, la actualización de los AGEBs, Localidades Urbanas y Rurales (Es
     Utilizamos una librería especializada en extracts para mejorar los tiempos de ejecución)
 
 
-*pendiente*: Cuántas opciones tiene cada AGEB de cada nivel -> Pre-calculado y mostrado en modal
-*pendiente*: Cuántas opciones tiene cada AGEB de cada nivel a qué tiempos. -> Pre-calculado y mostrado en modal
-*pendiente*: CLUES nivel 2 más cercano (nombre) y tiempo -> Pre-calculado y mostrado en modal 
+**: Cuántas opciones tiene cada AGEB de cada nivel -> Pre-calculado y mostrado en modal
+**: Cuántas opciones tiene cada AGEB de cada nivel a qué tiempos. -> Pre-calculado y mostrado en modal
+**: CLUES nivel 2 más cercano (nombre) y tiempo -> Pre-calculado y mostrado en modal 
 
 *pendiente*: Incorporar capacidades de atención por CLUES.
 
-*pendiente*: Diagrama de tecnologías 
+**: Diagrama de tecnologías 
 [Diagrama de tecnologías en draw.io](https://drive.google.com/file/d/1JwbSRxKlOHuxOyDfWusGGSZM02ikZuwh/view?usp=sharing)
 
 ## Productos
