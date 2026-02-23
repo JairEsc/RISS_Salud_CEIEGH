@@ -1,8 +1,11 @@
+## Documentación técnica 
+[Cálculos de accesibilidad y rutas óptimas entre polígonos y puntos](https://jairesc.github.io/RISS_Salud_CEIEGH/documentacion/calculos_accesibilidad.html)
+
 ## Insumos
 
 Hasta ahora, se establece periodicidad anual o semestral las actualizaciones de: 
     - CLUES (Georeferenciados)
-    - Capacidad de Atención 
+    - Capacidad de Atención (pendiente)
 Por definirse, la actualización de los AGEBs, Localidades Urbanas y Rurales (Esta versión utiliza marco geoestadístico de INEGI, dic. 2020 (se consideró utilizar 2025 pero hay que hacer match entre demográficos 2020 y cartográficos 2025))
 
 ## Procesos
@@ -13,7 +16,7 @@ Por definirse, la actualización de los AGEBs, Localidades Urbanas y Rurales (Es
       -no_usar_calculos_accesibilidad_clues.R 
       -no_usar_calculos_rasters_accesibilidad.R 
  
-*pendiente*: Cálculo de número de personas a más de X minutos -> Tab estadísticas
+*Completado*: Cálculo de número de personas a más de X minutos -> Tab estadísticas
     Resumen. Se toman 3 cartografías del marco geostadístico de INEGI
         -AGEB
         -Localidad Urbana (Tipo polígono)
@@ -23,7 +26,7 @@ Por definirse, la actualización de los AGEBs, Localidades Urbanas y Rurales (Es
     Se aplica una simplificación para disminuir el tamaño (MB) de los polígonos
     La unión de éstas geometrías y datos demográficos (fuente SCINCE) definen la primera base. 
 
-    Para 3 conjuntos de clues seleccionados (Nivel 1, Nivel 2 y Ambos), se calcula el raster de accesibilidad general y se agregan los tiempo promedios de accesibilidad a cada polígono de acuerdo a su intersección con el raster (extract). Esto define el segundo checkpoint (demográficos + accesibilidad promedio a niveles). 
+    Para 4 conjuntos de clues seleccionados (Nivel 1, Nivel 2, Nivel 3 y Todos los anteriores), se calcula el raster de accesibilidad general y se agregan los tiempo promedios de accesibilidad a cada polígono de acuerdo a su intersección con el raster (extract). Esto define el segundo checkpoint (demográficos + accesibilidad promedio a niveles). 
 
     Con este avance, es trivial determinar el nombre y tiempo promedio del CLUES de nivel 2 más cercano. 
     Nos fijamos en la columna calculada anteiormente para determinar el tiempo mínimo a un hospital y hacemos un join por vecino más cercano (st_join(st_nearest_feature)) para obtener clave de CLUES y nombre de la unidad. Se agregan como columnas y se guarda el progreso.
