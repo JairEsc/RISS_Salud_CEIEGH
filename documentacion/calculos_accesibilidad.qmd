@@ -22,7 +22,7 @@ getwd()
 #| include: false
 library(sf) 
 source("codigos/definicion_cartografia_demografia.R") 
-local=DBI::dbConnect(RSQLite::SQLite(), "clues_en_operacion_y_limites_municipales.sqlite")
+local=DBI::dbConnect(RSQLite::SQLite(), "clues_demograficos_municipios.sqlite")
 
 clues_en_operacion=dplyr::tbl(local,"clues_en_operacion")
 ```
@@ -452,6 +452,9 @@ source("codigos/no_usar_conteo_cluesN1_por_rangos_tiempo.R")
    median       uq      max neval
  23842.38 23842.38 23842.38     1'
 
+source("codigos/no_usar_calculos_accesibilidad_clues.R")
+
+
 ```
 
 Se incorporan los cálculos generados en archivos .geojson
@@ -528,7 +531,7 @@ sf::st_write(demograficos_info_accesibilidad_clues,"outputs/demograficos_con_inf
 
 
 #guardar en un solo archivo 
-limites_municipales=sf::st_read("../../Reutilizables/Cartografia/LIM_MUNICIPALES.shp") |> sf::st_transform(4326)
+limites_municipales=sf::st_read("inputs/accesibilidad_SIGEH/hidalgo/LIM_MUNICIPALES.shp") |> sf::st_transform(4326)
 con <- DBI::dbConnect(RSQLite::SQLite(), "clues_demograficos_municipios.sqlite")
 
 sf::st_write(clues_en_operacion_s, con, "clues_en_operacion", delete_layer = T)
