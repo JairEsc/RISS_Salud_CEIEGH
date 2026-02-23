@@ -4,7 +4,7 @@ T.GC="inputs/accesibilidad_SIGEH/accesibilidad_carretera.rds" |> readRDS()
 
 clues_solicitados=clues_en_operacion |> #dplyr::filter(NIVEL.ATENCION=="PRIMER NIVEL") |> 
   dplyr::select(NIVEL.ATENCION,geometry) |> dplyr::arrange(NIVEL.ATENCION) |> dplyr::collect() |> 
-  dplyr::mutate(geometry= sf::st_as_sfc(structure(geometry,class = "WKB" ),EWKB=T)) |> st_as_sf()
+  dplyr::mutate(geometry= sf::st_as_sfc(structure(geometry,class = "WKB" ),EWKB=T)) |> st_as_sf() 
 
 tiempo_zona=terra::rast("inputs/rasters/acces_CLUES_max90.tif")
 crs(tiempo_zona)=st_crs("EPSG:32614")$wkt
@@ -50,7 +50,7 @@ test_ageb=function(cve){
 }
 #detallitos
 #846
-for(cve_unica in unique(resultado$CVEGEO)){
+for(cve_unica in unique(resultado$CVEGEO[1:10])){
   counter=counter+1
   if(counter%%1000==0) print(cve_unica)
   #Tiempo de ejecución esperado: 3 horas
