@@ -45,9 +45,12 @@ source("codigos/definicion_custom_markers.R")
 source("codigos/moduleTabStats.R")
 source("codigos/extras_css.R")
 local=DBI::dbConnect(RSQLite::SQLite(), "clues_demograficos_municipios.sqlite")
+sinerhias=DBI::dbConnect(RSQLite::SQLite(), "outputs/clues_SINERHIAS.sqlite")
+sinerhias_N1=dplyr::tbl(sinerhias,"N1_CLUES_SINERHIAS")
 clues_en_operacion=dplyr::tbl(local,"clues_en_operacion")
 limites_municipales=sf::st_read(local,"limite_municipal")
-
+source("codigos/moduleTabInfraestructura.R")
+#clues_en_operacion |> dplyr::select()
 paleta_spectral_comun=colorNumeric(palette = "Spectral",domain = c(10,20,40,60,90))
 
 #demograficos_scince proviene de definicion_cartografia_demografia
@@ -85,14 +88,16 @@ salud a nivel estatal",disable = F),
     
     tags$style(HTML(tour_button_css)),
     sidebarMenu(
-      menuItem("Mapa Principal", tabName = "map", icon = icon("map-marked-alt")),
+      menuItem("Accesibilidad", tabName = "map", icon = icon("map-marked-alt")),
       introBox(id = "tour_step_3_agebs", data.step = 2, data.intro = "placeholder",
                checkboxInput(inputId = "agebs",label = "AGEBs y localidades rurales",value = F)
       ),
-      menuItem("Estadísticas", tabName = "stats", icon = icon("chart-bar")),
+      menuItem("Cobertura", tabName = "stats", icon = icon("chart-bar")),
+      menuItem("Infraestructura", tabName = "infra", icon = icon("building")),
       div(style = "padding: 10px;",
           actionButton("start_tour", "Explicación", class="btn-primary", width="100%",, icon = icon("question-circle"))
       )
+      
     ),
     collapsed = F,minified = F
   ),
@@ -116,7 +121,8 @@ salud a nivel estatal",disable = F),
             )
           )
       ),
-      tabStatsUI("tab_stats")
+      tabStatsUI("tab_stats"),
+      tabInfraUI("tab_infra")
     )
   )
 )
@@ -396,6 +402,8 @@ shinyApp(ui, function(input, output,session) {
   })
   
   tabStatsServer("tab_stats",nivel_at = reactive(input$nivel_at))##Ya la tenía "independiente", así que aproveché para consumirla como un módulo
-})
+  tabInfraServer("tab_infra",nivel_at = reactive(input$nivel_at),clues_en_operacion=clues_en_operacion)##Ya la tenía "independiente", así que aproveché para consumirla como un módulo
+
+  })
 
 #shiny::runApp("app.R",host = "0.0.0.0", port = 80)

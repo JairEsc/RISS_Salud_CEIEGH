@@ -1,7 +1,8 @@
 tabStatsUI=function(id){
   ns <- NS(id)
   tabItem(tabName = "stats",
-          introBox(id = "tour_step_4_slider",data.step = 4,data.intro = "<b>Filtrar por Tiempo de Accesibilidad</b><br/>Usa este deslizador para seleccionar un tiempo en minutos. El sistema filtrará las localidades que quedan fuera de ese rango de tiempo, es decir, con un CLUES más lejos que el tiempo seleccionado.",
+          introBox(id = "tour_step_4_slider",data.step = 4,
+                   data.intro = "<b>Filtrar por Tiempo de Accesibilidad</b><br/>Usa este deslizador para seleccionar un tiempo en minutos. El sistema filtrará las localidades que quedan fuera de ese rango de tiempo, es decir, con un CLUES más lejos que el tiempo seleccionado.",
             tags$style(HTML(sliderInputTiempoCss)),
             div(class = "slider-filter-container",
               sliderInput(ns("sliderTiempo"),width = '60%',min = 0,max = 180,value = 58,
@@ -78,7 +79,7 @@ tabStatsServer <- function(id, nivel_at) {
     
     output$total_loc <- renderValueBox({
       res <- listas_estadisticas()[[2]]
-      valueBox(nrow(res), "Localidades", icon = icon("house-circle-exclamation"), color = "teal")
+      valueBox(nrow(res), "Localidades fuera de cobertura", icon = icon("house-circle-exclamation"), color = "teal")
     })
     output$tabla_mun <- DT::renderDT({
       datatable(listas_estadisticas()[[3]] |> st_drop_geometry(), 
@@ -124,7 +125,7 @@ tabStatsServer <- function(id, nivel_at) {
       capa_sf <- lst[[1]]
       m <- leaflet() |> 
         addProviderTiles(providers$CartoDB.Positron) |> 
-        setView(lng = -98.83284,lat = 20.45979,zoom = 8) 
+        setView(lng = -98.83284,lat = 20.45979,zoom = 8)
       if(!is.null(capa_sf) && nrow(capa_sf) > 0){
         pal <- colorNumeric(palette = "YlOrRd", domain = c(0, max(c(0, max(capa_sf$POB_rel, na.rm = TRUE)))))
         m <- m |> addPolygons(data = capa_sf,
