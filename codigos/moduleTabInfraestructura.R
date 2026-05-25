@@ -66,7 +66,8 @@ tabInfraServer <- function(id, nivel_at,clues_en_operacion) {
       sinerhias_nivel_actual=reactive({
         equipamiento_opciones()[['tabla']]
       })
-      ##Observe nivel_at changes to reset equipment selections and trigger default regeneration
+      
+      ##Observe nivel_at changes to reset equipment selections
       observeEvent(nivel_at(), {
         equip_inputs(c("equip_1"))
         input_counter(1)
@@ -86,8 +87,17 @@ tabInfraServer <- function(id, nivel_at,clues_en_operacion) {
           return(invisible(NULL))
         }
         
+        ##Check which selected columns actually exist in the current table
+        available_cols <- colnames(sinerhias_nivel_actual())
+        selected_valid <- selected[selected %in% available_cols]
+        
+        ##If none of the selected columns exist in current nivel_at, skip update
+        if (length(selected_valid) == 0) {
+          return(invisible(NULL))
+        }
+        
         datas <- sinerhias_nivel_actual() |>
-          dplyr::filter(dplyr::if_all(dplyr::all_of(selected), ~ . == 1)) |>
+          dplyr::filter(dplyr::if_all(dplyr::all_of(selected_valid), ~ . == 1)) |>
           dplyr::select(CLUES) |>
           dplyr::collect()
         
@@ -187,9 +197,21 @@ tabInfraServer <- function(id, nivel_at,clues_en_operacion) {
       ##Debounce to avoid cascading updates when UI renders
       all_equip_values_debounced <- all_equip_values |> debounce(300)
       
-      ##Update map when debounced values change
-      observeEvent(all_equip_values_debounced(), {
-        values <- all_equip_values_debounced()$values
+      ##Reactive that combines BOTH nivel_at AND equipment values
+      ##Fires whenever EITHER changes, ensuring map updates in all cases
+      map_update_trigger <- reactive({
+        list(
+          nivel = nivel_at(),
+          equipos = all_equip_values_debounced()
+        )
+      })
+      
+      ##Debounce the entire trigger to handle nivel_at changes gracefully
+      map_update_trigger_debounced <- map_update_trigger |> debounce(100)
+      
+      ##Update map whenever nivel_at changes OR equipment selection changes
+      observeEvent(map_update_trigger_debounced(), {
+        values <- map_update_trigger_debounced()$equipos$values
         ##Only update if at least one non-empty selection exists
         if (any(!is.na(values) & values != "")) {
           update_mapa()
