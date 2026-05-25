@@ -9,8 +9,6 @@
 #...
 # X1 |  X2  |  X3  |  X4  |
 #map
-equipamiento_opciones=colnames(sinerhias_N1)[2:80]
-equipamiento_default <- sample(equipamiento_opciones,size = 1)
 
 tabInfraUI <- function(id){
   ns <- NS(id)
@@ -76,6 +74,7 @@ tabInfraServer <- function(id, nivel_at,clues_en_operacion) {
       
       ##Map update function
       update_mapa <- function() {
+        print("updated")
         ids <- equip_inputs()
         selected <- unique(na.omit(c(sapply(ids, function(x) {
           val <- input[[x]]
@@ -87,19 +86,16 @@ tabInfraServer <- function(id, nivel_at,clues_en_operacion) {
           return(invisible(NULL))
         }
         
-        ##Check which selected columns actually exist in the current table
-        available_cols <- colnames(sinerhias_nivel_actual())
-        selected_valid <- selected[selected %in% available_cols]
+        datas <- tryCatch({
+          sinerhias_nivel_actual() |>
+            dplyr::filter(dplyr::if_all(dplyr::all_of(selected), ~ . == 1)) |>
+            dplyr::select(CLUES) |>
+            dplyr::collect()
+        }, error = function(e) {
+          return(NULL)
+        })
         
-        ##If none of the selected columns exist in current nivel_at, skip update
-        if (length(selected_valid) == 0) {
-          return(invisible(NULL))
-        }
-        
-        datas <- sinerhias_nivel_actual() |>
-          dplyr::filter(dplyr::if_all(dplyr::all_of(selected_valid), ~ . == 1)) |>
-          dplyr::select(CLUES) |>
-          dplyr::collect()
+        if (is.null(datas)) return(invisible(NULL))
         
         porcentaje(round(100 * length(datas$CLUES) / (sinerhias_nivel_actual() |> dplyr::count() |> dplyr::collect()), 2))
         clues_con_equipam <- clues_en_operacion |>
@@ -185,38 +181,29 @@ tabInfraServer <- function(id, nivel_at,clues_en_operacion) {
         )
       })
       
-      ##Reactive that combines all equipment input values
-      all_equip_values <- reactive({
+      ##Store last known selected values to detect actual changes
+      last_selected_values <- reactiveVal(character(0))
+      
+      ##Observe nivel_at changes
+      observeEvent(nivel_at(), {
+        update_mapa()
+      }, ignoreInit = TRUE)
+      
+      ##Observe input changes (all current input selectors)
+      observe({
         ids <- equip_inputs()
-        list(
-          ids = ids,
-          values = c(sapply(ids, function(x) input[[x]]))
-        )
-      })
-      
-      ##Debounce to avoid cascading updates when UI renders
-      all_equip_values_debounced <- all_equip_values |> debounce(300)
-      
-      ##Reactive that combines BOTH nivel_at AND equipment values
-      ##Fires whenever EITHER changes, ensuring map updates in all cases
-      map_update_trigger <- reactive({
-        list(
-          nivel = nivel_at(),
-          equipos = all_equip_values_debounced()
-        )
-      })
-      
-      ##Debounce the entire trigger to handle nivel_at changes gracefully
-      map_update_trigger_debounced <- map_update_trigger |> debounce(100)
-      
-      ##Update map whenever nivel_at changes OR equipment selection changes
-      observeEvent(map_update_trigger_debounced(), {
-        values <- map_update_trigger_debounced()$equipos$values
-        ##Only update if at least one non-empty selection exists
-        if (any(!is.na(values) & values != "")) {
+        ##Extract current values WITHOUT depending on equip_inputs list structure
+        current_values <- unique(na.omit(c(sapply(ids, function(x) {
+          val <- input[[x]]
+          if (is.null(val) || val == "") NA else val
+        }))))
+        
+        ##Only update map if the actual selected VALUES changed
+        if (!identical(sort(current_values), sort(last_selected_values()))) {
+          last_selected_values(current_values)
           update_mapa()
         }
-      }, ignoreInit = TRUE)
+      }, label = "equipment-values-watcher")
       # output$equipamiento <- renderLeaflet({##Pendiente. Accesibilidad y pop-ups/labels
       #   selected <- unique(get_selected_equipamientos())##Opciones seleccionadas únicas. 
       #   datas <- if (length(selected) == 0) {##Nunca serían cero.
