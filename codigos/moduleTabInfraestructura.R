@@ -29,6 +29,7 @@ tabInfraServer <- function(id, nivel_at,clues_en_operacion) {
       equip_inputs <- reactiveVal(c("equip_1"))#Lista de equipamientos seleccionados
       input_counter <- reactiveVal(1)#Número de equipamientos consultados
       equip_defaults <- reactiveVal(list())#Store default values for new inputs
+      inputs_initialized <- reactiveVal(character(0))#Track first initialization of select inputs
       output$equipamiento <- renderLeaflet({
         leaflet() |> addTiles() 
       })
@@ -168,21 +169,26 @@ tabInfraServer <- function(id, nivel_at,clues_en_operacion) {
       output$equipamiento_list <- renderUI({
         ids <- equip_inputs()
         if (length(ids) == 0) return(NULL)
+        choices_available <- equipamiento_opciones()[['catalogo']]
         tagList(
           lapply(seq_along(ids), function(i) {
             id <- ids[i]
-            selected <- input[[id]]
-            if (is.null(selected) || selected == "") {
-              ##Check if we have a stored default for this input
+            selected <- NULL
+
+            if (!(id %in% inputs_initialized())) {
               if (id %in% names(equip_defaults())) {
                 selected <- equip_defaults()[[id]]
               } else {
                 selected <- equipamiento_default()
               }
+              inputs_initialized(c(inputs_initialized(), id))
             }
+
             div(
               class = "infra-input-card",
-              selectInput(ns(id), label = NULL, choices = equipamiento_opciones()[['catalogo']], selected = selected),
+              selectizeInput(ns(id), label = NULL, choices = choices_available, selected = selected,
+                             options = list(create = FALSE, placeholder = 'Escribe o selecciona...', openOnFocus = TRUE, allowEmptyOption = TRUE),
+                             width = "100%"),
               if (length(ids) > 1) {##Si hay más de uno, podemos eliminarlos
                 actionButton(ns(paste0("remove_", id)), label = HTML("&times;"), class = "btn btn-link remove-input")
               },
@@ -199,6 +205,8 @@ tabInfraServer <- function(id, nivel_at,clues_en_operacion) {
       
       ##Observe nivel_at changes
       observeEvent(nivel_at(), {
+        last_selected_values(character(0))
+        inputs_initialized(character(0))
         update_mapa()
       }, ignoreInit = TRUE)
       
@@ -209,7 +217,11 @@ tabInfraServer <- function(id, nivel_at,clues_en_operacion) {
         current_values <- unique(na.omit(c(sapply(ids, function(x) {
           val <- input[[x]]
           if (is.null(val) || val == "") NA else val
-        }))))
+        }))));
+        
+        if (length(current_values) == 0) {
+          return(NULL)
+        }
         
         ##Only update map if the actual selected VALUES changed
         if (!identical(sort(current_values), sort(last_selected_values()))) {
