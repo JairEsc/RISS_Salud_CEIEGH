@@ -33,6 +33,21 @@ tabInfraServer <- function(id, nivel_at,clues_en_operacion) {
       output$equipamiento <- renderLeaflet({
         leaflet() |> addTiles() 
       })
+
+      ## Helper: snapshot current input values into equip_defaults
+      snapshot_current_inputs <- function() {
+        ids <- equip_inputs()
+        if (length(ids) == 0) return(invisible(NULL))
+        cur <- equip_defaults()
+        for (id in ids) {
+          val <- input[[id]]
+          if (!is.null(val) && val != "") {
+            cur[[id]] <- val
+          }
+        }
+        equip_defaults(cur)
+        invisible(NULL)
+      }
       equipamiento_opciones=reactive({
         print(nivel_at())
         
@@ -52,54 +67,45 @@ tabInfraServer <- function(id, nivel_at,clues_en_operacion) {
           "CUALQUIER NIVEL" = ""
         )
         
-        ##Read catalog and filter by nivel
+        ##Catalogo
         catalog <- dplyr::tbl(sinerhias, "catalogo") |>
           dplyr::select(NombreVar, Descripcion.de.la.variable, !!nivel_col) |>
           dplyr::filter(!is.na(!!dplyr::sym(nivel_col))) |>
           dplyr::collect()
         
-        print(catalog)
-        
+
         lista_opciones <- list()
-        ##Store as named vector: display name -> variable name for queries
+        ##
         lista_opciones[['catalogo']] <- setNames(
           catalog$NombreVar,
           catalog$Descripcion.de.la.variable
         )
-        ##Keep the connection to the data table
+        ##conexion a la tabla de clues
         lista_opciones[['tabla']] <- dplyr::tbl(sinerhias, paste0(nivel_atencion, "CLUES_SINERHIAS"))
         
         lista_opciones
       })
-      equipamiento_default=reactive({
-        eleccion=sample(equipamiento_opciones()[['catalogo']],size = 1)
-        eleccion
-      })
       sinerhias_nivel_actual=reactive({
         equipamiento_opciones()[['tabla']]
       })
-      
       ##Observe nivel_at changes to reset equipment selections
       observeEvent(nivel_at(), {
+        ##Pendiente: Pasar de 1->2 o 2->3 mantiene las opciones seleccionadas. 
         equip_inputs(c("equip_1"))
         input_counter(1)
         equip_defaults(list())##Clear stored defaults
       })
-      
       ##Map update function
       update_mapa <- function() {
         print("updated")
-        ids <- equip_inputs()
+        ids <- equip_inputs()## puede tener la forma c("equip_1","equip_5","equip_7")
+        print(ids)
         selected <- unique(na.omit(c(sapply(ids, function(x) {
           val <- input[[x]]
           if (is.null(val) || val == "") NA else val
         }))))
-        
-        ##Skip if no selections made yet
-        if (length(selected) == 0) {
-          return(invisible(NULL))
-        }
-        
+        print(selected) ##Estas son las opciones distintas de la consulta actual
+
         datas <- tryCatch({
           sinerhias_nivel_actual() |>
             dplyr::filter(dplyr::if_all(dplyr::all_of(selected), ~ . == 1)) |>
@@ -107,54 +113,61 @@ tabInfraServer <- function(id, nivel_at,clues_en_operacion) {
             dplyr::collect()
         }, error = function(e) {
           return(NULL)
-        })
+        })##Consulta de las CLUES
         
         if (is.null(datas)) return(invisible(NULL))
-        
+        ##Actualizamos la frase
         porcentaje(round(100 * length(datas$CLUES) / (sinerhias_nivel_actual() |> dplyr::count() |> dplyr::collect()), 2))
-        clues_con_equipam <- clues_en_operacion |>
+        clues_con_equipam <- clues_en_operacion |>##Esto se puede reemplazar por datas porque ambos tienen la geometría, pero lo dejamos pendiente
           dplyr::filter(CLUES %in% datas$CLUES) |>
           dplyr::select(CLUES, geometry) |>
           dplyr::collect() |>
           dplyr::mutate(geometry = sf::st_as_sfc(structure(geometry, class = "WKB"), EWKB = T)) |>
           st_as_sf()
-        if(nrow(clues_con_equipam)>0){
+        leafletProxy("equipamiento")|> 
+          clearImages() |> 
+          clearMarkers()
+        if(nrow(clues_con_equipam)>0){##Solo actualizmos si hay clues con el equipamiento descrito
           res_raster <- gdistance::accCost(T.GC, matrix(unlist(clues_con_equipam |> st_transform(32614) |> st_geometry()),nrow = nrow(clues_con_equipam),ncol = 2,byrow = T))
           crs(res_raster)=st_crs("EPSG:32614")$wkt
           res_raster[res_raster>90]=NA
           leafletProxy("equipamiento")|> 
-            clearImages() |> 
             addRasterImage(projectRasterForLeaflet(res_raster,method = "ngb"),colors = "Spectral",group = "Accesibilidad peatonal (en minutos)")|>
-            clearMarkers() |> 
             addMarkers(data=clues_con_equipam,layerId = clues_con_equipam$CLUES)
-        }
-        else{
-          leafletProxy("equipamiento")|> 
-            clearImages() |> 
-            clearMarkers()
         }
       }
 
       observeEvent(input$add_equipamiento, {#Botoncito de agregar otro equipamiento
+        ##Snapshot current inputs so we don't lose user selections when UI rebuilds
+        snapshot_current_inputs()
+        prev_ids <- equip_inputs()
+        prev_id <- if (length(prev_ids) > 0) prev_ids[length(prev_ids)] else NULL
+        prev_val <- NULL
+        if (!is.null(prev_id)) {
+          cur_defaults <- equip_defaults()
+          if (!is.null(cur_defaults[[prev_id]])) prev_val <- cur_defaults[[prev_id]]
+        }
         next_id <- paste0("equip_", input_counter() + 1)
-        ##Use previous value as default for new input
-        prev_value <- input[[paste0("equip_", input_counter())]]
         input_counter(input_counter() + 1)
         equip_inputs(c(equip_inputs(), next_id))
-        ##Store default value for this new input (if previous had a value)
-        if (!is.null(prev_value) && prev_value != "") {
-          new_defaults <- equip_defaults()
-          new_defaults[[next_id]] <- prev_value
-          equip_defaults(new_defaults)
-        }
+        ##Set default for the new input to the previous value (if any)
+        new_defaults <- equip_defaults()
+        if (!is.null(prev_val)) new_defaults[[next_id]] <- prev_val
+        equip_defaults(new_defaults)
       })
 
       observe({##Creamos los eventos para eliminar inputs.  
-        ids <- equip_inputs()
+        ids <- equip_inputs()##Cuando este se actualiza, creamos eventos para escuchar a estos ID's pero para borrar
         lapply(ids, function(id) {
           remove_id <- paste0("remove_", id)
           observeEvent(input[[remove_id]], {
+            ##Snapshot before removing so we preserve other selections
+            snapshot_current_inputs()
             equip_inputs(setdiff(equip_inputs(), id))
+            new_defaults <- equip_defaults()
+            new_defaults[[id]] <- NULL
+            equip_defaults(new_defaults)
+            inputs_initialized(setdiff(inputs_initialized(), id))
           }, ignoreInit = TRUE, once = TRUE)
         })
       })
@@ -168,22 +181,14 @@ tabInfraServer <- function(id, nivel_at,clues_en_operacion) {
 
       output$equipamiento_list <- renderUI({
         ids <- equip_inputs()
-        if (length(ids) == 0) return(NULL)
+        if (length(ids) == 0) return(NULL)##Esto nunca debería ocurrir
         choices_available <- equipamiento_opciones()[['catalogo']]
+        #print("choices_available")
+        #print(choices_available)##Las variables disponibles
         tagList(
-          lapply(seq_along(ids), function(i) {
+          lapply(seq_along(ids), function(i) {##Este es tal cual lo que se hace en update map
             id <- ids[i]
-            selected <- NULL
-
-            if (!(id %in% inputs_initialized())) {
-              if (id %in% names(equip_defaults())) {
-                selected <- equip_defaults()[[id]]
-              } else {
-                selected <- equipamiento_default()
-              }
-              inputs_initialized(c(inputs_initialized(), id))
-            }
-
+            selected <- equip_defaults()[[id]]
             div(
               class = "infra-input-card",
               selectizeInput(ns(id), label = NULL, choices = choices_available, selected = selected,
@@ -200,73 +205,35 @@ tabInfraServer <- function(id, nivel_at,clues_en_operacion) {
         )
       })
       
-      ##Store last known selected values to detect actual changes
       last_selected_values <- reactiveVal(character(0))
+      skip_next_observer_update <- reactiveVal(FALSE)
       
       ##Observe nivel_at changes
       observeEvent(nivel_at(), {
         last_selected_values(character(0))
         inputs_initialized(character(0))
+        skip_next_observer_update(TRUE)  ## Flag to skip the next observer firing
         update_mapa()
       }, ignoreInit = TRUE)
       
-      ##Observe input changes (all current input selectors)
       observe({
+        if (skip_next_observer_update()) {
+          skip_next_observer_update(FALSE)
+          return(invisible(NULL))
+        }
+        
         ids <- equip_inputs()
-        ##Extract current values WITHOUT depending on equip_inputs list structure
         current_values <- unique(na.omit(c(sapply(ids, function(x) {
           val <- input[[x]]
           if (is.null(val) || val == "") NA else val
         }))));
-        
-        if (length(current_values) == 0) {
-          return(NULL)
-        }
-        
         ##Only update map if the actual selected VALUES changed
-        if (!identical(sort(current_values), sort(last_selected_values()))) {
+        if (!identical(sort(current_values), sort(last_selected_values())) ) {
           last_selected_values(current_values)
           update_mapa()
         }
       }, label = "equipment-values-watcher")
-      # output$equipamiento <- renderLeaflet({##Pendiente. Accesibilidad y pop-ups/labels
-      #   selected <- unique(get_selected_equipamientos())##Opciones seleccionadas únicas. 
-      #   datas <- if (length(selected) == 0) {##Nunca serían cero.
-      #     sinerhias_N1 |> dplyr::select(CLUES) |> dplyr::collect() 
-      #   } else {
-      #     sinerhias_N1 |>
-      #       dplyr::filter(dplyr::if_all(dplyr::all_of(selected), ~ . == 1)) |>
-      #       dplyr::select(CLUES) |> 
-      #       dplyr::collect() 
-      #   }
-      #   porcentaje(round(100 * length(datas$CLUES) / (sinerhias_N1 |> dplyr::count() |> dplyr::collect()), 2))
-      #   clues_con_equipam <- clues_en_operacion |>
-      #     dplyr::filter(CLUES %in% datas$CLUES) |>
-      #     dplyr::select(CLUES, geometry) |>
-      #     dplyr::collect() |>
-      #     dplyr::mutate(geometry = sf::st_as_sfc(structure(geometry, class = "WKB"), EWKB = T)) |>
-      #     st_as_sf()
-      #   ##Isocronas(clues_con_equipam)
-      #   ##Demografia(isocronas)
-      #   ##lógica para agregar al mapa
-      #   leaflet() |> addTiles() |> addMarkers(data = clues_con_equipam)
-      # })
-      # observeEvent(input$equipamiento_marker_click,{
-      #   print(input$equipamiento_marker_click)
-      #   punto_referencia_fijo=st_point(c(input$equipamiento_marker_click$lng ,input$equipamiento_marker_click$lat)) |> st_sfc(crs = 4326)
-      #   res_raster <- gdistance::accCost(T.GC, punto_referencia_fijo |> st_transform(st_crs("EPSG:32614")) |> unlist())
-      #   crs(res_raster)=st_crs("EPSG:32614")$wkt
-      #   
-      #   AccesibilidadCLUES(poligono =clues_en_operacion |>
-      #                        dplyr::filter(CLUES == input$equipamiento_marker_click$id) |>
-      #                        dplyr::collect() ,
-      #   centro=punto_referencia_fijo,
-      #   leaflet_proxy = "equipamiento")
-      #   leafletProxy("equipamiento")|> 
-      #     clearImages() |> 
-      #     addRasterImage(projectRasterForLeaflet(res_raster,method = "ngb"),colors = "Spectral",group = "Accesibilidad peatonal (en minutos)")  
-      #     
-      # })
+      
     }
   )
 }
