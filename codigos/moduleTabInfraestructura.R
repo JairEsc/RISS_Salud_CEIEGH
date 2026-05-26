@@ -16,7 +16,8 @@ tabInfraUI <- function(id){
     tabName = "infra",
     uiOutput(ns("frase")),
     uiOutput(ns("equipamiento_list")),
-    leafletOutput(ns("equipamiento"), height = "65vh")
+    leafletOutput(ns("equipamiento"), height = "65vh"),
+    shiny::actionButton(ns("calcular_accesibilidad"),label = "Calcular Accesibilidad")
   )
 }
 
@@ -26,6 +27,7 @@ tabInfraServer <- function(id, nivel_at,clues_en_operacion) {
     function(input, output, session) {
       ns <- session$ns
       porcentaje = reactiveVal(value = 0)
+      clues_con_equipamiento = reactiveVal(value = as.data.frame(0) )
       equip_inputs <- reactiveVal(c("equip_1"))#Lista de equipamientos seleccionados
       input_counter <- reactiveVal(1)#Número de equipamientos consultados
       equip_defaults <- reactiveVal(list())#Store default values for new inputs
@@ -134,10 +136,11 @@ tabInfraServer <- function(id, nivel_at,clues_en_operacion) {
           dplyr::collect() |>
           dplyr::mutate(geometry = sf::st_as_sfc(structure(geometry, class = "WKB"), EWKB = T)) |>
           st_as_sf()
+        clues_con_equipamiento(clues_con_equipam)
         leafletProxy("equipamiento")|> 
-          #clearImages() |> 
+          clearImages() |> 
           clearMarkers() |> 
-          clearGroup("CLUES") 
+          removeControl(layerId = "Accesibilidad en minutos2")
           
         
         if(nrow(clues_con_equipam)>0){##Solo actualizmos si hay clues con el equipamiento descrito
@@ -151,8 +154,29 @@ tabInfraServer <- function(id, nivel_at,clues_en_operacion) {
             #            label=clues_con_equipam$CLUES,popup = clues_con_equipam$NOMBRE.DE.LA.INSTITUCION)
             addMarkers_custom(data =clues_con_equipam,addSearch = F )
         }
-      }
+      }   
+      observeEvent(input$calcular_accesibilidad,{
+        clues_con_equipam=clues_con_equipamiento()
+        res_raster <- gdistance::accCost(T.GC, matrix(unlist(clues_con_equipam |> st_transform(32614) |> st_geometry()),nrow = nrow(clues_con_equipam),ncol = 2,byrow = T))
+        crs(res_raster)=st_crs("EPSG:32614")$wkt
+        res_raster[res_raster>90]=NA
+        ##Pendiente: Colores de markers dependiendo nivel de atencion. 
+        leafletProxy("equipamiento")|> 
+          addRasterImage(projectRasterForLeaflet(res_raster,method = "ngb"),colors = "Spectral",group = "Accesibilidad peatonal (en minutos)")|> addLegend(
+            position = "bottomright",
+            pal = colorNumeric(palette = "Spectral", domain = c(10, 90)),
+            values = c(10, 20, 40, 60, 90),
+            title = "Accesibilidad",
+            opacity = 0.85,
+            layerId = "Accesibilidad en minutos2",
+            labFormat = labelFormat(
+              suffix = " min.",
+              between = " a ",
+              transform = function(x) x
+            )
+          ) 
 
+      })
       observeEvent(input$add_equipamiento, {#Botoncito de agregar otro equipamiento
         ##Snapshot current inputs so we don't lose user selections when UI rebuilds
         snapshot_current_inputs()
@@ -189,8 +213,17 @@ tabInfraServer <- function(id, nivel_at,clues_en_operacion) {
       })
 
       output$frase <- renderUI({
+        nrow_nivel <- switch(nivel_at(),
+                            "PRIMER NIVEL" = 833,
+                            "SEGUNDO NIVEL" = 32,
+                            "TERCER NIVEL" = 2,
+                            "CUALQUIER NIVEL" = 867
+        )
+        
         tags$p(
-          paste0("El ", porcentaje(), "% de los CLUES de ", stringr::str_to_lower(nivel_at()), " ", "cuentan con :"),
+          paste0(
+            "De los ",nrow_nivel," CLUES de ",stringr::str_to_lower(nivel_at()),", ", nrow(clues_con_equipamiento()), " CLUES (",porcentaje(),"%) cuentan
+            con cada uno de los siguientes equipamientos"),
           class = "infra-frase"
         )
       })
