@@ -16,7 +16,7 @@ tabInfraUI <- function(id){
     tabName = "infra",
     uiOutput(ns("frase")),
     uiOutput(ns("equipamiento_list")),
-    leafletOutput(ns("equipamiento"), height = "55vh")
+    leafletOutput(ns("equipamiento"), height = "65vh")
   )
 }
 
@@ -31,7 +31,17 @@ tabInfraServer <- function(id, nivel_at,clues_en_operacion) {
       equip_defaults <- reactiveVal(list())#Store default values for new inputs
       inputs_initialized <- reactiveVal(character(0))#Track first initialization of select inputs
       output$equipamiento <- renderLeaflet({
-        leaflet() |> addTiles() 
+        leaflet() |> addTiles() |> 
+          setView(lng = -98.83284,lat = 20.45979,zoom = 9) |> 
+          addLegend(
+            position = "bottomleft",
+            colors = unname(colores_markers),
+            labels = c("Primer Nivel", "Segundo Nivel", "Tercer Nivel"),
+            opacity = 1,
+            title = HTML("<div class='legend-title'>Nivel de Atención</div>"),
+            group = "CLUES",
+            layerId = "leyenda_clues"
+          )
       })
 
       ## Helper: snapshot current input values into equip_defaults
@@ -99,14 +109,14 @@ tabInfraServer <- function(id, nivel_at,clues_en_operacion) {
       update_mapa <- function() {
         print("updated")
         ids <- equip_inputs()## puede tener la forma c("equip_1","equip_5","equip_7")
-        print(ids)
+        #print(ids)
         selected <- unique(na.omit(c(sapply(ids, function(x) {
           val <- input[[x]]
           if (is.null(val) || val == "") NA else val
         }))))
-        print(selected) ##Estas son las opciones distintas de la consulta actual
+        #print(selected) ##Estas son las opciones distintas de la consulta actual
 
-        datas <- tryCatch({
+        consulta_actual <- tryCatch({
           sinerhias_nivel_actual() |>
             dplyr::filter(dplyr::if_all(dplyr::all_of(selected), ~ . == 1)) |>
             dplyr::select(CLUES) |>
@@ -115,25 +125,31 @@ tabInfraServer <- function(id, nivel_at,clues_en_operacion) {
           return(NULL)
         })##Consulta de las CLUES
         
-        if (is.null(datas)) return(invisible(NULL))
+        if (is.null(consulta_actual)) return(invisible(NULL))
         ##Actualizamos la frase
-        porcentaje(round(100 * length(datas$CLUES) / (sinerhias_nivel_actual() |> dplyr::count() |> dplyr::collect()), 2))
+        porcentaje(round(100 * nrow(consulta_actual) / (sinerhias_nivel_actual() |> dplyr::count() |> dplyr::collect()), 2))
         clues_con_equipam <- clues_en_operacion |>##Esto se puede reemplazar por datas porque ambos tienen la geometría, pero lo dejamos pendiente
-          dplyr::filter(CLUES %in% datas$CLUES) |>
-          dplyr::select(CLUES, geometry) |>
+          dplyr::filter(CLUES %in% consulta_actual$CLUES) |>
+          dplyr::select(CLUES,NIVEL.ATENCION,NOMBRE.DE.LA.INSTITUCION,NOMBRE.DE.LA.UNIDAD,MUNICIPIO,Tiempo_promedio_CLUES_N1_mas_cercano,Tiempo_promedio_CLUES_N2_mas_cercano,Tiempo_promedio_CLUES_N3_mas_cercano, geometry) |>
           dplyr::collect() |>
           dplyr::mutate(geometry = sf::st_as_sfc(structure(geometry, class = "WKB"), EWKB = T)) |>
           st_as_sf()
         leafletProxy("equipamiento")|> 
-          clearImages() |> 
-          clearMarkers()
+          #clearImages() |> 
+          clearMarkers() |> 
+          clearGroup("CLUES") 
+          
+        
         if(nrow(clues_con_equipam)>0){##Solo actualizmos si hay clues con el equipamiento descrito
-          res_raster <- gdistance::accCost(T.GC, matrix(unlist(clues_con_equipam |> st_transform(32614) |> st_geometry()),nrow = nrow(clues_con_equipam),ncol = 2,byrow = T))
-          crs(res_raster)=st_crs("EPSG:32614")$wkt
-          res_raster[res_raster>90]=NA
+          #res_raster <- gdistance::accCost(T.GC, matrix(unlist(clues_con_equipam |> st_transform(32614) |> st_geometry()),nrow = nrow(clues_con_equipam),ncol = 2,byrow = T))
+          #crs(res_raster)=st_crs("EPSG:32614")$wkt
+          #res_raster[res_raster>90]=NA
+          ##Pendiente: Colores de markers dependiendo nivel de atencion. 
           leafletProxy("equipamiento")|> 
-            addRasterImage(projectRasterForLeaflet(res_raster,method = "ngb"),colors = "Spectral",group = "Accesibilidad peatonal (en minutos)")|>
-            addMarkers(data=clues_con_equipam,layerId = clues_con_equipam$CLUES)
+            #addRasterImage(projectRasterForLeaflet(res_raster,method = "ngb"),colors = "Spectral",group = "Accesibilidad peatonal (en minutos)")|>
+            # addMarkers(data=clues_con_equipam,layerId = clues_con_equipam$CLUES,
+            #            label=clues_con_equipam$CLUES,popup = clues_con_equipam$NOMBRE.DE.LA.INSTITUCION)
+            addMarkers_custom(data =clues_con_equipam,addSearch = F )
         }
       }
 

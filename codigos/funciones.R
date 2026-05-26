@@ -3,9 +3,9 @@
 generadorPopUpContentDemog=function(poligono){
   return(
     paste0(
-      "<strong>Clave geográfica:</strong> ", 
-      ((poligono$CVEGEO))
-      ,"<br>",
+      # "<strong>Clave geográfica:</strong> ", 
+      # ((poligono$CVEGEO))
+      # ,"<br>",
       "<strong>Municipio:</strong> ", 
       ((poligono$NOM_MUN))
       ,"<br>",
