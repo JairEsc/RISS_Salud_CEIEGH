@@ -33,28 +33,41 @@ tabInfraServer <- function(id, nivel_at,clues_en_operacion) {
         leaflet() |> addTiles() 
       })
       equipamiento_opciones=reactive({
-        #req(nivel_at())
         print(nivel_at())
-        nivel_atencion=switch(nivel_at(),
-                              "PRIMER NIVEL" = {
-                                "N1_"
-                              },
-                              "SEGUNDO NIVEL" = {
-                                "N2_"
-                              },
-                              "TERCER NIVEL" = {
-                                "N3_"
-                              },
-                              "CUALQUIER NIVEL" = {
-                                ""
-                              }
+        
+        ##Determine which nivel column to filter on
+        nivel_col <- switch(nivel_at(),
+          "PRIMER NIVEL" = "primer_nivel",
+          "SEGUNDO NIVEL" = "segundo_nivel",
+          "TERCER NIVEL" = "tercer_nivel",
+          "CUALQUIER NIVEL" = "cualquier_nivel"
         )
-        cols <- dplyr::tbl(sinerhias,paste0(nivel_atencion, "CLUES_SINERHIAS")) |>
-          colnames()
-        print(cols)
-        lista_opciones=list()
-        lista_opciones[['catalogo']]=cols[2:(length(cols)-1)]##Remove las que no sean infrarestuctura.
-        lista_opciones[['tabla']]=dplyr::tbl(sinerhias,paste0(nivel_atencion, "CLUES_SINERHIAS"))
+        
+        ##Get the tabla name for queries
+        nivel_atencion <- switch(nivel_at(),
+          "PRIMER NIVEL" = "N1_",
+          "SEGUNDO NIVEL" = "N2_",
+          "TERCER NIVEL" = "N3_",
+          "CUALQUIER NIVEL" = ""
+        )
+        
+        ##Read catalog and filter by nivel
+        catalog <- dplyr::tbl(sinerhias, "catalogo") |>
+          dplyr::select(NombreVar, Descripcion.de.la.variable, !!nivel_col) |>
+          dplyr::filter(!is.na(!!dplyr::sym(nivel_col))) |>
+          dplyr::collect()
+        
+        print(catalog)
+        
+        lista_opciones <- list()
+        ##Store as named vector: display name -> variable name for queries
+        lista_opciones[['catalogo']] <- setNames(
+          catalog$NombreVar,
+          catalog$Descripcion.de.la.variable
+        )
+        ##Keep the connection to the data table
+        lista_opciones[['tabla']] <- dplyr::tbl(sinerhias, paste0(nivel_atencion, "CLUES_SINERHIAS"))
+        
         lista_opciones
       })
       equipamiento_default=reactive({

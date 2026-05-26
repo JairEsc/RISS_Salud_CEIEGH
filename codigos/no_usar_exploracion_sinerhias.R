@@ -1,10 +1,10 @@
 #
-excel_ruta="inputs/Variables SINERHIAS_0526.xlsx"
+excel_ruta="inputs/Variables SINERHIAS_0526 Niveles.xlsx"
 capacidad_instalada=excel_ruta |> openxlsx::loadWorkbook() |> openxlsx::sheets() |> lapply(\(sh){
  openxlsx::read.xlsx(excel_ruta, sh,startRow = 7)
 })
 capacidad_instalada=capacidad_instalada |> setNames(excel_ruta |> openxlsx::loadWorkbook() |> openxlsx::sheets() )
-catalogo=excel_ruta |> openxlsx::read.xlsx(sheet = "Variables",skipEmptyCols = T,check.names = T) 
+catalogo="inputs/Variables SINERHIAS_0526 Catalogo.xlsx" |> openxlsx::read.xlsx(sheet = "Variables",skipEmptyCols = T,check.names = T) 
 
 capacidad_instalada_N1=capacidad_instalada[[1]]
 ##cero_en_todas_partes
@@ -40,6 +40,13 @@ library(sf)
 st_write(capacidad_instalada_N1_tidy|> merge(clues_en_operacion |> dplyr::select(CLUES,geometry),all.x=T), con, "N1_CLUES_SINERHIAS", delete_layer = FALSE)
 st_write(capacidad_instalada_N2_tidy|> merge(clues_en_operacion |> dplyr::select(CLUES,geometry),all.x=T), con, "N2_CLUES_SINERHIAS", delete_layer = FALSE)
 st_write(capacidad_instalada_N3_tidy|> merge(clues_en_operacion |> dplyr::select(CLUES,geometry),all.x=T), con, "N3_CLUES_SINERHIAS", delete_layer = FALSE)
+
+catalogo=catalogo |> 
+  merge(y =capacidad_instalada_N1 |> dplyr::select(NombreVar) |> dplyr::mutate(primer_nivel=1) ,by='NombreVar',all.x=T) |> 
+  merge(y =capacidad_instalada_N2 |> dplyr::select(NombreVar) |> dplyr::mutate(segundo_nivel=1) ,by='NombreVar',all.x=T) |> 
+  merge(y =capacidad_instalada_N3 |> dplyr::select(NombreVar) |> dplyr::mutate(tercer_nivel=1) ,by='NombreVar',all.x=T) |> 
+  dplyr::mutate(cualquier_nivel=ifelse(sum(c(primer_nivel,segundo_nivel,tercer_nivel),na.rm=T)>0,1,0))#####Pendiente 
+st_write(catalogo, con, "catalogo", delete_layer = FALSE)
 
 library(leaflet)
 library(gdistance)
