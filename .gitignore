@@ -9,3 +9,4 @@ rsconnect/*
 .positai
 outputs/confidenciales/*
 !outputs/confidenciales/Nota.txt
+!outputs/confidenciales/*zip
