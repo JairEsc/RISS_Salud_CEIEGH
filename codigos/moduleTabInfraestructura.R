@@ -21,7 +21,7 @@ tabInfraUI <- function(id){
   )
 }
 
-tabInfraServer <- function(id, nivel_at,clues_en_operacion) {
+tabInfraServer <- function(id, nivel_at,clues_en_operacion,sinerhias) {
   moduleServer(
     id,
     function(input, output, session) {
@@ -61,7 +61,7 @@ tabInfraServer <- function(id, nivel_at,clues_en_operacion) {
         invisible(NULL)
       }
       equipamiento_opciones=reactive({
-        print(nivel_at())
+        #print(nivel_at())
         
         ##Determine which nivel column to filter on
         nivel_col <- switch(nivel_at(),
@@ -109,7 +109,7 @@ tabInfraServer <- function(id, nivel_at,clues_en_operacion) {
       })
       ##Map update function
       update_mapa <- function() {
-        print("updated")
+        #print("updated")
         ids <- equip_inputs()## puede tener la forma c("equip_1","equip_5","equip_7")
         #print(ids)
         selected <- unique(na.omit(c(sapply(ids, function(x) {
@@ -140,6 +140,7 @@ tabInfraServer <- function(id, nivel_at,clues_en_operacion) {
         leafletProxy("equipamiento")|> 
           clearImages() |> 
           clearMarkers() |> 
+          clearGroup("CLUES") |> 
           removeControl(layerId = "Accesibilidad en minutos2")
           
         

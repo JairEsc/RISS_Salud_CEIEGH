@@ -46,7 +46,6 @@ source("codigos/moduleTabStats.R")
 source("codigos/extras_css.R")
 local=DBI::dbConnect(RSQLite::SQLite(), "clues_demograficos_municipios.sqlite")
 sinerhias=DBI::dbConnect(RSQLite::SQLite(), "outputs/confidenciales/clues_SINERHIAS.sqlite")
-sinerhias_N1=dplyr::tbl(sinerhias,"N1_CLUES_SINERHIAS")
 clues_en_operacion=dplyr::tbl(local,"clues_en_operacion")
 limites_municipales=sf::st_read(local,"limite_municipal")
 source("codigos/moduleTabInfraestructura.R")
@@ -348,17 +347,19 @@ shinyApp(ui, function(input, output,session) {
     n_poligonos_involucrados=interseccion_agebs |> nrow()
     ##Resumir las intersecciones como la suma
     data_c_geo=data |> dplyr::bind_cols( interseccion_agebs |>
-                               dplyr::select(POB1:SALUD10,CVEGEO,NOM_MUN:NOMGEO,CLUES_N1_10:nombre_clues_N3_mas_cercano) |> ##Aquí sí se eligen menos coluumnas 
-                                 st_drop_geometry() |> 
-                               dplyr::mutate(dplyr::across(dplyr::everything(), ~ ifelse(.x < 0, NA, .x)
-                                                           )) |> 
-                                 dplyr::summarise_all(.funs = \(x){ifelse(is.character(x),paste0(unique(x),collapse = ", "),sum(x,na.rm=T))}) ) |> ##Suna o concat según el tipo de la variable
-      dplyr::mutate(
-        tiempo_promedio_CLUES_N1=tiempo_promedio_clues_N1_mas_cercano/n_poligonos_involucrados,
-        tiempo_promedio_CLUES_N2=tiempo_promedio_clues_N2_mas_cercano/n_poligonos_involucrados,
-        tiempo_promedio_CLUES_N3=tiempo_promedio_clues_N3_mas_cercano/n_poligonos_involucrados
-                    )
-      
+                       dplyr::select(POB1:SALUD10,CVEGEO,NOM_MUN:NOMGEO,CLUES_N1_10:nombre_clues_N3_mas_cercano) |> ##Aquí sí se eligen menos coluumnas 
+                       st_drop_geometry() |> 
+                       dplyr::mutate(dplyr::across(dplyr::everything(), ~ ifelse(.x < 0, NA, .x) )) |> 
+                       dplyr::summarise_all(.funs = \(x){ifelse(is.character(x),paste0(unique(x),collapse = ", "),sum(x,na.rm=T))}) ) |> ##Suma o concat según el tipo de la variable
+                       dplyr::mutate(
+                         tiempo_promedio_clues_N1_mas_cercano=tiempo_promedio_clues_N1_mas_cercano/n_poligonos_involucrados,
+                         tiempo_promedio_clues_N2_mas_cercano=tiempo_promedio_clues_N2_mas_cercano/n_poligonos_involucrados,
+                         tiempo_promedio_clues_N3_mas_cercano=tiempo_promedio_clues_N3_mas_cercano/n_poligonos_involucrados
+                                      )
+    #print(data_c_geo)
+    if(n_poligonos_involucrados>10){
+      data_c_geo=data_c_geo|>dplyr::select(-NOMGEO)|>dplyr::mutate(NOMGEO=paste0(n_poligonos_involucrados," AGEBs y localidades"))
+    }
     ##Se reutiliza el método de arriba con este polígono nuevo.
     AccesibilidadPoligono(data_c_geo)
   })
@@ -402,7 +403,7 @@ shinyApp(ui, function(input, output,session) {
   })
   
   tabStatsServer("tab_stats",nivel_at = reactive(input$nivel_at))##Ya la tenía "independiente", así que aproveché para consumirla como un módulo
-  tabInfraServer("tab_infra",nivel_at = reactive(input$nivel_at),clues_en_operacion=clues_en_operacion)##Ya la tenía "independiente", así que aproveché para consumirla como un módulo
+  tabInfraServer("tab_infra",nivel_at = reactive(input$nivel_at),clues_en_operacion=clues_en_operacion,sinerhias=sinerhias)##Ya la tenía "independiente", así que aproveché para consumirla como un módulo
 
   })
 
