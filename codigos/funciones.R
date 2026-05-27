@@ -3,9 +3,9 @@
 generadorPopUpContentDemog=function(poligono){
   return(
     paste0(
-      "<strong>Clave geográfica:</strong> ", 
-      ((poligono$CVEGEO))
-      ,"<br>",
+      # "<strong>Clave geográfica:</strong> ", 
+      # ((poligono$CVEGEO))
+      # ,"<br>",
       "<strong>Municipio:</strong> ", 
       ((poligono$NOM_MUN))
       ,"<br>",
@@ -23,8 +23,7 @@ generadorPopUpContentDemog=function(poligono){
       ,"<br>",
       "<strong>Tiempo promedio a CLUES de nivel 2 más cercano:</strong> ", 
       format(round(poligono$tiempo_promedio_clues_N2_mas_cercano, 1), big.mark = ","), " minutos"
-      ,"<br>",
-      "<strong>CLUES nivel 2 más cercano: </strong> "
+
     )
   )
 }

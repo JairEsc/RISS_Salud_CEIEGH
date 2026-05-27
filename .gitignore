@@ -6,3 +6,6 @@ inputs/*
 codigos/deprecated/token_mapbox.R
 codigos/deprecated/conexion_supabase.R
 rsconnect/*
+.positai
+outputs/confidenciales/*
+!outputs/confidenciales/Nota.txt
