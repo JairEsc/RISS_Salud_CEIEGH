@@ -1,4 +1,4 @@
-demograficos_scince=st_read("outputs/demograficos_con_info_accesibilidad.geojson")
+demograficos_scince=sf::st_read("outputs/demograficos_con_info_accesibilidad.geojson")
 ##único vectorial con cartografia
 ##
 ##CVEGEO
@@ -19,3 +19,19 @@ demograficos_scince=st_read("outputs/demograficos_con_info_accesibilidad.geojson
 #Num CLUES N1 a menos de 60 minutos
 
 ##
+
+# 
+# poblacion = "outputs/poblaciones_intervalos.csv" |>  read.csv()
+# 
+# 
+# 
+# demograficos_scince = demograficos_scince |>
+#   dplyr::left_join(y = poblacion, by = "CVEGEO")
+# 
+# demograficos_scince = demograficos_scince |> 
+#   dplyr::relocate(POB_0a2:POBF_60ymas, .after = POB84)
+# 
+# 
+# demograficos_scince |>  sf::write_sf("outputs/demograficos_con_info_accesibilidad1.geojson", overwrite = TRUE)
+
+

@@ -34,7 +34,7 @@ library(DT)
 library(rintrojs)
 library(dbplyr)
 #source("codigos/csv_to_geojson.R")
-#source("codigos/token_mapbox.R")#Ya no se usa
+#source("codigos/token_mapbox.R")   #Ya no se usa
 source("codigos/funciones.R")
 #source("../../Reutilizables/Postgres_BUIG/conexion_local.R")#Aislar
 ##Ya está aislada en supabase. Para leerla de texto a hexadecimal:

@@ -53,7 +53,9 @@ tabStatsServer <- function(id, nivel_at) {
         nivel = nivel_at(), 
         tiempo = input$sliderTiempo
       )
+      
     })
+
     
     #Renderizar cajitas de valores
     output$total_pob <- renderValueBox({
@@ -81,6 +83,8 @@ tabStatsServer <- function(id, nivel_at) {
       res <- listas_estadisticas()[[2]]
       valueBox(nrow(res), "Localidades fuera de cobertura", icon = icon("house-circle-exclamation"), color = "teal")
     })
+    
+    
     output$tabla_mun <- DT::renderDT({
       datatable(listas_estadisticas()[[3]] |> st_drop_geometry(), 
                 options = list(pageLength = 10, scrollX = TRUE, dom = 'ftp',
@@ -99,6 +103,29 @@ tabStatsServer <- function(id, nivel_at) {
                 rownames = FALSE, class = 'cell-border stripe',
                 colnames = c('Municipio'='NOM_MUN','Localidad'='NOMGEO','Población Total'='POB1',
                              'Población Afiliada a SS'='SALUD1','Tiempo promedio a CLUES N1'='tiempo_promedio_CLUES_N1',
+                             
+                             "Población de \n 0 a 2 \n años" = "POB_0a2",                              
+                             "Población de \n 3 a 5 \n años" = "POB_3a5",                             
+                             "Población de \n 6 a 11 \n años" = "POB_6a11",                             
+                             "Población de \n 12 a 14 \n años" = "POB_12a14",                            
+                             "Población de \n 15 a 19 \n años" = "POB_15a19",                           
+                             "Población de \n 20 a 59 \n años" = "POB_20a59",                            
+                             "Población de \n 60 años y más" = "POB_60ymas",                           
+                             "Población masculina de \n 0 a 2 \n años" = "POBM_0a2",                          
+                             "Población masculina de \n 3 a 2 \n años" = "POBM_3a5",                             
+                             "Población masculina de \n 6 a 2 \n años" = "POBM_6a11",                            
+                             "Población masculina de \n 12 a 2 \n años" = "POBM_12a14",                          
+                             "Población masculina de \n 15 a 2 \n años" = "POBM_15a19",                           
+                             "Población masculina de \n 20 a 2 \n años" = "POBM_20a59",                           
+                             "Población masculina de \n 60 años y más" = "POBM_60ymas",                         
+                             "Población femenina de \n 0 a 2 \n años" = "POBF_0a2",                             
+                             "Población femenina de \n 3 a 5 \n años" = "POBF_3a5",                             
+                             "Población femenina de \n 6 a 11 \n años" = "POBF_6a11",                           
+                             "Población femenina de \n 12 a 14 \n años" = "POBF_12a14",                           
+                             "Población femenina de \n 15 a 19 \n años" = "POBF_15a19",                           
+                             "Población femenina de \n 20 a 59 \n años" = "POBF_20a59",                          
+                             "Población femenina de \n 60 años y más" = "POBF_60ymas",
+                             
                              'Tiempo promedio a CLUES N2'='tiempo_promedio_CLUES_N2',
                              'Tiempo promedio a CLUES N3'='tiempo_promedio_CLUES_N3'))
     })
@@ -107,8 +134,36 @@ tabStatsServer <- function(id, nivel_at) {
                 options = list(pageLength = 10, scrollX = TRUE, dom = 'ftp',
                                language = list(url = '//cdn.datatables.net/plug-ins/1.10.11/i18n/Spanish.json')),
                 rownames = FALSE, class = 'cell-border stripe',
-                colnames = c('Municipio'='NOM_MUN','Localidad'='NOMGEO','Población Total'='POB1','Población Hombres'='POB42',
+                colnames = c('Municipio'='NOM_MUN',
+                             'Localidad'='NOMGEO',
+                             'Población Total'='POB1',
+                             'Población Hombres'='POB42',
                              'Población Mujeres'='POB84',
+                             
+                             "Población de \n 0 a 2 \n años" = "POB_0a2",                              
+                             "Población de \n 3 a 5 \n años" = "POB_3a5",                             
+                             "Población de \n 6 a 11 \n años" = "POB_6a11",                             
+                             "Población de \n 12 a 14 \n años" = "POB_12a14",                            
+                             "Población de \n 15 a 19 \n años" = "POB_15a19",                           
+                             "Población de \n 20 a 59 \n años" = "POB_20a59",                            
+                             "Población de \n 60 años y más" = "POB_60ymas",                           
+                             "Población masculina de \n 0 a 2 \n años" = "POBM_0a2",                          
+                             "Población masculina de \n 3 a 2 \n años" = "POBM_3a5",                             
+                             "Población masculina de \n 6 a 2 \n años" = "POBM_6a11",                            
+                             "Población masculina de \n 12 a 2 \n años" = "POBM_12a14",                          
+                             "Población masculina de \n 15 a 2 \n años" = "POBM_15a19",                           
+                             "Población masculina de \n 20 a 2 \n años" = "POBM_20a59",                           
+                             "Población masculina de \n 60 años y más" = "POBM_60ymas",                         
+                             "Población femenina de \n 0 a 2 \n años" = "POBF_0a2",                             
+                             "Población femenina de \n 3 a 5 \n años" = "POBF_3a5",                             
+                             "Población femenina de \n 6 a 11 \n años" = "POBF_6a11",                           
+                             "Población femenina de \n 12 a 14 \n años" = "POBF_12a14",                           
+                             "Población femenina de \n 15 a 19 \n años" = "POBF_15a19",                           
+                             "Población femenina de \n 20 a 59 \n años" = "POBF_20a59",                          
+                             "Población femenina de \n 60 años y más" = "POBF_60ymas",
+                             
+                             
+                             
                              'Población Afiliada a SS'='SALUD1','Tiempo promedio a CLUES N1'='tiempo_promedio_CLUES_N1',
                              'Tiempo promedio a CLUES N2'='tiempo_promedio_CLUES_N2',
                              'Tiempo promedio a CLUES N3'='tiempo_promedio_CLUES_N3',
@@ -187,7 +242,7 @@ tabStatsServer <- function(id, nivel_at) {
       filename = function() {
         tab <- input$tab_detalle
         tab_clean <- gsub("\\s+", "_", tolower(tab))
-        ext <- if(tab %in% c("Municipios", "Localidades")) ".xlsx" else ".geojson"
+        ext <- if(tab %in% c("Municipios", "Localidades", "AGEBs")) ".xlsx" else ".geojson"
         paste0(tab_clean, "_", Sys.Date(), ext)
       },
       content = function(file) {
@@ -205,8 +260,8 @@ tabStatsServer <- function(id, nivel_at) {
          
         } else if(tab == "AGEBs"){
           ageb_sf <- listas_estadisticas()[[1]]
-          # write GeoJSON directly to 'file'
-          sf::st_write(ageb_sf, file, driver = "GeoJSON", delete_dsn = TRUE, quiet = TRUE)
+          ageb_df = tryCatch({ sf::st_drop_geometry(ageb_sf) }, error = function(e) ageb_sf)
+          writexl::write_xlsx(ageb_df, path = file)
         } else {
           # fallback: write a small text file
           writeLines("No data for selected tab.", con = file)
