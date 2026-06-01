@@ -205,3 +205,4 @@ estadisticas_dado_nivel_atencion_y_tiempo=function(nivel,tiempo){
   return(list(lista_agebs,conteo_por_localidad,conteo_por_municipio,popupsContents))
 }
 
+
