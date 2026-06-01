@@ -5,7 +5,8 @@
 
 Hasta ahora, se establece periodicidad anual o semestral las actualizaciones de: 
     - CLUES (Georeferenciados)
-    - Capacidad de Atención (pendiente)
+    - SINERHIAS (en proceso). Catálogo y variable tipo boolean para el equipamiento.
+    - Capacidad de Atención (en proceso). Datos de morbilidad a nivel de CLUES. Subconjunto d epadecimientos por definir.
 Por definirse, la actualización de los AGEBs, Localidades Urbanas y Rurales (Esta versión utiliza marco geoestadístico de INEGI, dic. 2020 (se consideró utilizar 2025 pero hay que hacer match entre demográficos 2020 y cartográficos 2025))
 
 ## Procesos
@@ -14,9 +15,10 @@ Por definirse, la actualización de los AGEBs, Localidades Urbanas y Rurales (Es
     - Incorporación de API (mapbox) para la consulta de isocronas a niveles fijos (10,20,40,60) de puntos variables (CLUES / agebs). --Se excluye por simplicidad.
     - Ejecución única de códigos: 
       -no_usar_calculos_accesibilidad_clues.R 
-      -no_usar_calculos_rasters_accesibilidad.R 
+      -no_usar_calculos_rasters_accesibilidad.R. En caso de ser necesario, existe una versión dockerizada para la generación de insumos.
+      
  
-*Completado*: Cálculo de número de personas a más de X minutos -> Tab estadísticas
+*Completado*: Cálculo de número de personas a más de X minutos -> Tab cobertura
     Resumen. Se toman 3 cartografías del marco geostadístico de INEGI
         -AGEB
         -Localidad Urbana (Tipo polígono)
@@ -33,7 +35,7 @@ Por definirse, la actualización de los AGEBs, Localidades Urbanas y Rurales (Es
 
     Para calcular el número de clues (de nivel N) se considera el subconjunto de pixeles con intersección no vacía al polígono (ageb) y se calcula la distancia de cada uno de los centroides de los pixeles a todos los CLUES seleccionados. (Comentario técnico: De haberse tomado el centroide del polígono, los agebs "grandes" podrían tener información poco precisa. Creemos que el promedio de centroides de pixeles que cubren al polígono es un mejor acercamiento)
 
-    (Comentarío técnico: Como es de esperarse, el costo computacional es alto. Dada la periodicidad de actualización de información, no creo que valga la pena optimizar la actualización de estos datos.
+    (Comentarío técnico: Como es de esperarse, el costo computacional es alto. Dada la periodicidad de actualización de información, no creo que valga la pena optimizar la actualización de estos datos. Pero podría almacenarse la matriz de costos inter-CLUES y agregar filas columnas conforme se actualicen. 
     Utilizamos una librería especializada en extracts para mejorar los tiempos de ejecución)
 
 

@@ -118,3 +118,64 @@ body {
     border-color: #096657;
     color:#ffffff;
 }
+
+.infra-frase {
+    margin: 0 0 16px 0;
+    padding: 0px 0px;
+    background: #f6faf8;
+    border: 1px solid #d9e3df;
+    border-radius: 14px;
+    color: #1f2933;
+    font-size: 1.6rem;
+    line-height: 1.6;
+}
+
+.infra-input-card {
+    position: relative;
+    padding: 0px 18px 0px 18px;
+    border: 1px solid rgba(39, 49, 66, 0.08);
+    border-radius: 14px;
+    background-color: #ffffff;
+    box-shadow: 0 6px 18px rgba(2, 6, 23, 0.04);
+    display: flex;
+}
+.form-group{
+  margin-bottom:1px!important;
+}
+
+.infra-input-card .remove-input,
+.infra-input-card .infra-add-input {
+    top: 0px;
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    line-height: 1;
+    text-align: center;
+}
+
+.infra-input-card .remove-input {
+    right: 12px;
+    color: #6b7280;
+}
+
+.infra-input-card .remove-input:hover {
+    color: #dc2626;
+}
+
+.infra-input-card .infra-add-input {
+    left: 12px;
+    background-color: #e6f4ef;
+    border-color: #b8dcc8;
+    color: #064a38;
+}
+
+.infra-input-card .infra-add-input:hover {
+    background-color: #d3eee0;
+}
+
+.infra-input-card .selectize-control.single .selectize-input {
+    border-radius: 12px !important;
+}
+#tab_infra-equipamiento_list{
+  display: ruby;
+}

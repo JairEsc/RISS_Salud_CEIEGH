@@ -34,7 +34,7 @@ library(DT)
 library(rintrojs)
 library(dbplyr)
 #source("codigos/csv_to_geojson.R")
-#source("codigos/token_mapbox.R")#Ya no se usa
+#source("codigos/token_mapbox.R")   #Ya no se usa
 source("codigos/funciones.R")
 #source("../../Reutilizables/Postgres_BUIG/conexion_local.R")#Aislar
 ##Ya está aislada en supabase. Para leerla de texto a hexadecimal:
@@ -45,9 +45,11 @@ source("codigos/definicion_custom_markers.R")
 source("codigos/moduleTabStats.R")
 source("codigos/extras_css.R")
 local=DBI::dbConnect(RSQLite::SQLite(), "clues_demograficos_municipios.sqlite")
+sinerhias=DBI::dbConnect(RSQLite::SQLite(), "outputs/confidenciales/clues_SINERHIAS.sqlite")
 clues_en_operacion=dplyr::tbl(local,"clues_en_operacion")
 limites_municipales=sf::st_read(local,"limite_municipal")
-
+source("codigos/moduleTabInfraestructura.R")
+#clues_en_operacion |> dplyr::select()
 paleta_spectral_comun=colorNumeric(palette = "Spectral",domain = c(10,20,40,60,90))
 
 #demograficos_scince proviene de definicion_cartografia_demografia
@@ -85,14 +87,16 @@ salud a nivel estatal",disable = F),
     
     tags$style(HTML(tour_button_css)),
     sidebarMenu(
-      menuItem("Mapa Principal", tabName = "map", icon = icon("map-marked-alt")),
+      menuItem("Accesibilidad", tabName = "map", icon = icon("map-marked-alt")),
       introBox(id = "tour_step_3_agebs", data.step = 2, data.intro = "placeholder",
                checkboxInput(inputId = "agebs",label = "AGEBs y localidades rurales",value = F)
       ),
-      menuItem("Estadísticas", tabName = "stats", icon = icon("chart-bar")),
+      menuItem("Cobertura", tabName = "stats", icon = icon("chart-bar")),
+      menuItem("Infraestructura", tabName = "infra", icon = icon("building")),
       div(style = "padding: 10px;",
           actionButton("start_tour", "Explicación", class="btn-primary", width="100%",, icon = icon("question-circle"))
       )
+      
     ),
     collapsed = F,minified = F
   ),
@@ -116,7 +120,8 @@ salud a nivel estatal",disable = F),
             )
           )
       ),
-      tabStatsUI("tab_stats")
+      tabStatsUI("tab_stats"),
+      tabInfraUI("tab_infra")
     )
   )
 )
@@ -342,17 +347,19 @@ shinyApp(ui, function(input, output,session) {
     n_poligonos_involucrados=interseccion_agebs |> nrow()
     ##Resumir las intersecciones como la suma
     data_c_geo=data |> dplyr::bind_cols( interseccion_agebs |>
-                               dplyr::select(POB1:SALUD10,CVEGEO,NOM_MUN:NOMGEO,CLUES_N1_10:nombre_clues_N3_mas_cercano) |> ##Aquí sí se eligen menos coluumnas 
-                                 st_drop_geometry() |> 
-                               dplyr::mutate(dplyr::across(dplyr::everything(), ~ ifelse(.x < 0, NA, .x)
-                                                           )) |> 
-                                 dplyr::summarise_all(.funs = \(x){ifelse(is.character(x),paste0(unique(x),collapse = ", "),sum(x,na.rm=T))}) ) |> ##Suna o concat según el tipo de la variable
-      dplyr::mutate(
-        tiempo_promedio_CLUES_N1=tiempo_promedio_clues_N1_mas_cercano/n_poligonos_involucrados,
-        tiempo_promedio_CLUES_N2=tiempo_promedio_clues_N2_mas_cercano/n_poligonos_involucrados,
-        tiempo_promedio_CLUES_N3=tiempo_promedio_clues_N3_mas_cercano/n_poligonos_involucrados
-                    )
-      
+                       dplyr::select(POB1:SALUD10,CVEGEO,NOM_MUN:NOMGEO,CLUES_N1_10:nombre_clues_N3_mas_cercano) |> ##Aquí sí se eligen menos coluumnas 
+                       st_drop_geometry() |> 
+                       dplyr::mutate(dplyr::across(dplyr::everything(), ~ ifelse(.x < 0, NA, .x) )) |> 
+                       dplyr::summarise_all(.funs = \(x){ifelse(is.character(x),paste0(unique(x),collapse = ", "),sum(x,na.rm=T))}) ) |> ##Suma o concat según el tipo de la variable
+                       dplyr::mutate(
+                         tiempo_promedio_clues_N1_mas_cercano=tiempo_promedio_clues_N1_mas_cercano/n_poligonos_involucrados,
+                         tiempo_promedio_clues_N2_mas_cercano=tiempo_promedio_clues_N2_mas_cercano/n_poligonos_involucrados,
+                         tiempo_promedio_clues_N3_mas_cercano=tiempo_promedio_clues_N3_mas_cercano/n_poligonos_involucrados
+                                      )
+    #print(data_c_geo)
+    if(n_poligonos_involucrados>10){
+      data_c_geo=data_c_geo|>dplyr::select(-NOMGEO)|>dplyr::mutate(NOMGEO=paste0(n_poligonos_involucrados," AGEBs y localidades"))
+    }
     ##Se reutiliza el método de arriba con este polígono nuevo.
     AccesibilidadPoligono(data_c_geo)
   })
@@ -396,6 +403,8 @@ shinyApp(ui, function(input, output,session) {
   })
   
   tabStatsServer("tab_stats",nivel_at = reactive(input$nivel_at))##Ya la tenía "independiente", así que aproveché para consumirla como un módulo
-})
+  tabInfraServer("tab_infra",nivel_at = reactive(input$nivel_at),clues_en_operacion=clues_en_operacion,sinerhias=sinerhias)##Ya la tenía "independiente", así que aproveché para consumirla como un módulo
+
+  })
 
 #shiny::runApp("app.R",host = "0.0.0.0", port = 80)
