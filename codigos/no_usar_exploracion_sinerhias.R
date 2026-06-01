@@ -14,40 +14,76 @@ capacidad_instalada_N1_tidy=capacidad_instalada_N1 |>
   dplyr::select(-Descripcion.de.la.variable,-TipoDato.Especifico) |> 
   dplyr::group_by(NombreVar) |>
   tidyr::pivot_longer(cols = HGDIF000043:HGPMX000035,names_to = "CLUES") |> 
-  tidyr::pivot_wider(names_from = c(NombreVar),values_from = c(value))
+  tidyr::pivot_wider(names_from = c(NombreVar),values_from = c(value))|> 
+  dplyr::mutate(across(where(is.numeric), as.integer))|> 
+  merge(clues_en_operacion |> dplyr::select(CLUES,geometry),by='CLUES',all.x=T) |> 
+  dplyr::filter(!is.na(geometry))
 capacidad_instalada_N2=capacidad_instalada[[2]]
 capacidad_instalada_N2_tidy=capacidad_instalada_N2 |> 
   dplyr::select(-Descripcion.de.la.variable,-TipoDato.Especifico) |> 
   dplyr::group_by(NombreVar)|> tidyr::pivot_longer(cols = HGIMB000151:HGPMX000016,names_to = "CLUES") |> 
-  tidyr::pivot_wider(names_from = c(NombreVar),values_from = c(value))
+  tidyr::pivot_wider(names_from = c(NombreVar),values_from = c(value))|> 
+  dplyr::mutate(across(where(is.numeric), as.integer))|> 
+  merge(clues_en_operacion |> dplyr::select(CLUES,geometry),by='CLUES',all.x=T) |> 
+  dplyr::filter(!is.na(geometry))
+
 capacidad_instalada_N3=capacidad_instalada[[3]]
 capacidad_instalada_N3_tidy=capacidad_instalada_N3 |> 
   dplyr::select(-Descripcion.de.la.variable,-TipoDato.Especifico) |> 
   dplyr::group_by(NombreVar)|> tidyr::pivot_longer(cols = HGDIF000014:HGIMB002304,names_to = "CLUES") |> 
-  tidyr::pivot_wider(names_from = c(NombreVar),values_from = c(value))
+  tidyr::pivot_wider(names_from = c(NombreVar),values_from = c(value))|> 
+  dplyr::mutate(across(where(is.numeric), as.integer))|> 
+  merge(clues_en_operacion |> dplyr::select(CLUES,geometry),by='CLUES',all.x=T) |> 
+  dplyr::filter(!is.na(geometry))
 
-##Ejemplo de consulta
-capacidad_instalada_N1_tidy |> 
-  dplyr::filter(ambulancia>0) |> 
-  dplyr::select(CLUES)
+####faltantes
+ncol(capacidad_instalada_N1[,4:ncol(capacidad_instalada_N1)])-
+  nrow(capacidad_instalada_N1_tidy)
+ncol(capacidad_instalada_N2[,4:ncol(capacidad_instalada_N2)])-
+  nrow(capacidad_instalada_N2_tidy)
+ncol(capacidad_instalada_N3[,4:ncol(capacidad_instalada_N3)])-
+  nrow(capacidad_instalada_N3_tidy)
 
 
 source("../../Reutilizables/Postgres_BUIG/conexion_local.R")
-sinerhias <- DBI::dbConnect(RSQLite::SQLite(), "outputs/confidenciales/clues_SINERHIAS.sqlite")
+local=DBI::dbConnect(RSQLite::SQLite(), "clues_demograficos_municipios.sqlite")
+sinerhias <- DBI::dbConnect(RSQLite::SQLite(), "outputs/confidenciales/clues_SINERHIAS_int.sqlite")
 clues_en_operacion=st_read(local,"clues_en_operacion")
 ##Falta agregar datos calculados a los geojsons
 library(sf)
-st_write(capacidad_instalada_N1_tidy|> merge(clues_en_operacion |> dplyr::select(CLUES,geometry),all.x=T), sinerhias, "N1_CLUES_SINERHIAS", delete_layer = FALSE)
-st_write(capacidad_instalada_N2_tidy|> merge(clues_en_operacion |> dplyr::select(CLUES,geometry),all.x=T), sinerhias, "N2_CLUES_SINERHIAS", delete_layer = FALSE)
-st_write(capacidad_instalada_N3_tidy|> merge(clues_en_operacion |> dplyr::select(CLUES,geometry),all.x=T), sinerhias, "N3_CLUES_SINERHIAS", delete_layer = FALSE)
 
+st_write(capacidad_instalada_N1_tidy, sinerhias, "N1_CLUES_SINERHIAS", delete_layer = T)
+st_write(capacidad_instalada_N2_tidy, sinerhias, "N2_CLUES_SINERHIAS", delete_layer = T)
+st_write(capacidad_instalada_N3_tidy, sinerhias, "N3_CLUES_SINERHIAS", delete_layer = T)
+
+capacidades_instaladas=do.call(plyr::rbind.fill,capacidad_instalada[1:3])
+capacidades_instaladas=capacidad_instalada[[1]] |> 
+  dplyr::select(-Descripcion.de.la.variable,-TipoDato.Especifico) |> 
+  merge(capacidad_instalada[[2]] |> 
+          dplyr::select(-Descripcion.de.la.variable,-TipoDato.Especifico) ,by='NombreVar',all=T) |> 
+  merge(capacidad_instalada[[3]] |> 
+          dplyr::select(-Descripcion.de.la.variable,-TipoDato.Especifico) ,by='NombreVar',all=T) 
+capacidades_instaladas_tidy=capacidades_instaladas |> 
+  dplyr::group_by(NombreVar) |> tidyr::pivot_longer(cols = HGDIF000043:HGIMB002304,names_to = "CLUES") |> 
+  tidyr::pivot_wider(names_from = c(NombreVar),values_from = c(value))
+capacidades_instaladas_tidy=capacidades_instaladas_tidy |> 
+  dplyr::mutate(dplyr::across(where(is.numeric),~tidyr::replace_na(., 0))) |> 
+  dplyr::mutate(dplyr::across(where(is.numeric), as.integer))|> merge(clues_en_operacion |> dplyr::select(CLUES,geometry),by='CLUES',all.x=T) |> 
+  dplyr::filter(!is.na(geometry))
+
+st_write(capacidades_instaladas_tidy, sinerhias, "CLUES_SINERHIAS", delete_layer = T,append=F)
+
+
+###
 catalogo=catalogo |> 
   merge(y =capacidad_instalada_N1 |> dplyr::select(NombreVar) |> dplyr::mutate(primer_nivel=1) ,by='NombreVar',all.x=T) |> 
   merge(y =capacidad_instalada_N2 |> dplyr::select(NombreVar) |> dplyr::mutate(segundo_nivel=1) ,by='NombreVar',all.x=T) |> 
   merge(y =capacidad_instalada_N3 |> dplyr::select(NombreVar) |> dplyr::mutate(tercer_nivel=1) ,by='NombreVar',all.x=T) |> 
   dplyr::mutate(cualquier_nivel=ifelse(sum(c(primer_nivel,segundo_nivel,tercer_nivel),na.rm=T)>0,1,0))#####Pendiente 
+catalogo=catalogo|> dplyr::mutate(across(where(is.numeric), as.integer)) |> 
+  dplyr::mutate(dplyr::across(where(is.numeric),~tidyr::replace_na(., 0)))
 st_write(catalogo, sinerhias, "catalogo", delete_layer = T,append=F)
-
+DBI::dbDisconnect(sinerhias)
 library(leaflet)
 library(gdistance)
 
@@ -67,19 +103,5 @@ generarMapaWeb = function(nivel_de_atencion = 'N1_', variable1) {
     addMarkers(data = clues_filtrados) |> 
     addRasterImage(projectRasterForLeaflet(tiempo_zona,method = "ngb"),colors = "Spectral",group = "Accesibilidad carretera (en minutos)") 
 }
-capacidad_instalada_N1_tidy |> colnames()
 generarMapaWeb("N2",variable1 = "expedienteclinico")
 
-capacidades_instaladas=do.call(plyr::rbind.fill,capacidad_instalada[1:3])
-capacidades_instaladas=capacidad_instalada[[1]] |> 
-  dplyr::select(-Descripcion.de.la.variable,-TipoDato.Especifico) |> 
-  merge(capacidad_instalada[[2]] |> 
-          dplyr::select(-Descripcion.de.la.variable,-TipoDato.Especifico) ,by='NombreVar',all=T) |> 
-  merge(capacidad_instalada[[3]] |> 
-          dplyr::select(-Descripcion.de.la.variable,-TipoDato.Especifico) ,by='NombreVar',all=T) 
-  
-
-capacidades_instaladas_tidy=capacidades_instaladas |> 
-  dplyr::group_by(NombreVar) |> tidyr::pivot_longer(cols = HGDIF000043:HGIMB002304,names_to = "CLUES") |> 
-  tidyr::pivot_wider(names_from = c(NombreVar),values_from = c(value))
-st_write(capacidades_instaladas_tidy|> merge(clues_en_operacion |> dplyr::select(CLUES,geometry),by='CLUES',all.x=T), sinerhias, "CLUES_SINERHIAS", delete_layer = T,append=F)
