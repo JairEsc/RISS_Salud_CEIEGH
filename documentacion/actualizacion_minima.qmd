@@ -1,0 +1,138 @@
+---
+title: "Actualización mínima"
+author: "JairES"
+format: pdf
+editor: visual
+---
+
+## Ejercicio de actualización
+
+Vamos a resumir los requisitos mínimos para actualizar.
+
+De acuerdo al flujo de "app.R",
+
+```{r}
+#| eval: false
+#| include: false
+source("codigos/funciones.R")
+
+source("codigos/SIGEH_isochrone.R")
+source("codigos/definicion_cartografia_demografia.R")
+source("codigos/definicion_custom_markers.R")
+source("codigos/moduleTabStats.R")
+source("codigos/extras_css.R")
+local=DBI::dbConnect(RSQLite::SQLite(), "clues_demograficos_municipios.sqlite")
+clues_en_operacion=dplyr::tbl(local,"clues_en_operacion")
+limites_municipales=sf::st_read(local,"limite_municipal")
+
+#...
+#inputs/rasters/
+```
+
+\
+
+### Funciones
+
+Contiene
+
+- generadorPopUpContentDemog() \#
+
+- generadorPopUpContentCLUES() \#
+
+- AccesibilidadPoligono() \# click sobre un polígono o selección (dibujo) de varios polígonos de AGEB/localidad
+
+- AccesibilidadCLUES() \# Agrega PopUp al dar click al CLUES. No incluye cálculo de accesibilidad
+
+- estadisticas_dado_nivel_atencion_y_tiempo() \# Calcula los tiempos promedios a clues más cercanos por nivel. Alimenta indirectamente la tabla de Tab "Cobertura".
+
+### SIGEH_ISO
+
+Define \$T.GC\$ el modelo de accesibilidad. Actualmente lo lee de un .RDS para eficiencia.
+
+### Definicion cartografía demografía
+
+Lee un .geojson que incluye información demográfica
+
+- POB1, POB42,...
+
+- SALUD1,...
+
+- CLUES_N\_...
+
+- tiempo_promedio_clues\_...
+
+Explícitamente usadas: \
+
+En POP-UP:
+
+NOM_MUN, NOMGEO, POB1, SALUD1, tiempo_promedio_clues_N1_mas_cercano, tiempo_promedio_clues_N2_mas_cercano,
+
+En Tablas para descargar: \### Este se va a corregir para incluir grupos etarios
+
+tiempo_promedio_clues_N3_mas_cercano, POB84, POB42, CLUES_N1_10, CLUES_N1_20, CLUES_N1_40, CLUES_N1_60, id_clues_N1_mas_cercano, nombre_clues_N1_mas_cercano, \
+... CLUESN2, \
+... CLUESN3,\
+Repetidos (tiempo_promedio_clues_N(1,2,3)\_mas_cercano)
+
+### definicion_custom_markers
+
+addMarkers_custom() \
+Dado un leafletProxy, le agrega CLUES (debe contener el nivel de atención) de acuerdo a su nivel de atención distinguiendo por colores.
+
+### clues_demograficos_municipios.sqlite
+
+Archivo local que contiene tablas de
+
+- clues_en_operacion
+
+  - CLUES, "info de clues",
+
+  - Conteo_N{k}\_T\_{m}
+
+  - CLUES_N{k}\_*mas\_*cercano
+
+  - Tiempo_promedio_N{k}
+
+  - POBs_T{m}
+
+  - SALUDs_T{m}
+
+- demograficos_scince ##Esta se va a reemplazar para incluir grupos etarios específicos
+
+  - CVEGEO, NOM_MUN, NOMGEO
+
+  - POBs
+
+  - SALUDs
+
+  - CLUES_N{k}\_m
+
+  - tiempo_promedio_N{k}
+
+  - id_clues_N{k}
+
+  - nombre_clues_N{k}
+
+- limite_municipal \## solo se usa una vez en Tab "Accesibilidad"
+
+  - NOM_MUN, geometry
+
+### inputs/rasters/
+
+Un raster para cada nivel de atención y cada modelo de accesibilidad (carretera o peatonal) \## se va a cambiar para incluir desglose por público/privado/ambos
+
+### En resumen
+
+Se deben actualizar/generar 3 objetos.
+
+- rasters \### Se genera un raster por cada posible elección
+
+  - 2 modelos de accesibilidad
+
+  - 4 niveles de atencion (1,2,3, cualquiera)
+
+  - 3 tipos de instancias (publica/ privada/ ambas)
+
+- sqlite \### Contiene las tablas descritas
+
+- .geojson \## Es una de las tablas (demograficos)
