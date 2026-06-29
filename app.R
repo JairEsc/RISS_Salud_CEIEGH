@@ -45,7 +45,7 @@ source("codigos/definicion_cartografia_demografia.R")
 source("codigos/definicion_custom_markers.R")
 source("codigos/moduleTabStats.R")
 source("codigos/extras_css.R")
-local=DBI::dbConnect(RSQLite::SQLite(), "clues_demograficos_municipios.sqlite")
+local=DBI::dbConnect(RSQLite::SQLite(), "clues_demograficos_municipios_simple.sqlite")
 temp_dir=tempdir()
 archive::archive_extract(archive = "outputs/confidenciales/clues_SINERHIAS_int.zip",password = Sys.getenv("pass"),dir = temp_dir)
 sinerhias=DBI::dbConnect(RSQLite::SQLite(), list.files(temp_dir,pattern = "clues_SINERHIAS_int.sqlite",full.names = T))
@@ -207,7 +207,6 @@ shinyApp(ui, function(input, output,session) {
         leafletProxy("mapa_principal") |>
           removeShape(paste0("AGEBs",1:nrow(demograficos_scince)))
       }
-      
   })
 
   lista_objetos_especiales <- reactiveVal(value = 0)##Especiales son los que se dibujan. No necesito la lista, nomás saber si está vacía
