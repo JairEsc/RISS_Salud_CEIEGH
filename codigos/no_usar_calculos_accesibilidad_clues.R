@@ -11,7 +11,8 @@
 
 clues_solicitados=clues_en_operacion |> #dplyr::filter(NIVEL.ATENCION=="PRIMER NIVEL") |> 
   dplyr::select(CLUES,NIVEL.ATENCION,geometry) |> dplyr::arrange(NIVEL.ATENCION) |> dplyr::collect() |> 
-  dplyr::mutate(geometry= sf::st_as_sfc(structure(geometry,class = "WKB" ),EWKB=T)) |> st_as_sf()
+  dplyr::mutate(geometry= sf::st_as_sfc(structure(geometry,class = "WKB" ),EWKB=T)) |> st_as_sf() |> 
+  dplyr::group_by(NIVEL.ATENCION) |> dplyr::slice_head(n=5)
 T.GC=readRDS("inputs/accesibilidad_SIGEH/accesibilidad_carretera.rds")
 
 costo_traslado_entre_clues=gdistance::costDistance(T.GC,fromCoords = 
@@ -19,11 +20,10 @@ costo_traslado_entre_clues=gdistance::costDistance(T.GC,fromCoords =
                                                 ,toCoords = 
                                                   matrix(unlist(clues_solicitados$geometry |> st_transform(32614)),nrow = nrow(clues_solicitados),ncol = 2,byrow = T)
 )
-costo_traslado_entre_clues=distancia_entre_clues
 costo_traslado_entre_clues |> apply(MARGIN=1,FUN=\(row){
   row=costo_traslado_entre_clues[1,]
-  n1=1002
-  n2=188
+  n1=5
+  n2=5
   n3=2
   particion1_row=row[1:n1]
   particion2_row=row[(n1+1):(n1+n2)]
@@ -99,6 +99,8 @@ metricas_clues <- apply(costo_traslado_entre_clues, MARGIN = 1, FUN = function(r
 
 metricas_clues_df=do.call(rbind,args = metricas_clues |> lapply(unlist)) |> as.data.frame()
 metricas_clues_df$CLUES=clues_solicitados$CLUES
+
+
 #Una disculpa por esto
 colnames(metricas_clues_df)=c(paste0(paste0("Conteo_N",1:3 |> lapply(\(w)rep(w,4)) |> unlist()),"_T",rep(c(10,20,40,60),3)),
                               paste0(c("CLUES_N","Tiempo_promedio_CLUES_N") |> rep(3) |> unlist(),1:3 |> lapply(\(w){w|> rep(2)}) |> unlist(),"_mas_cercano"),
@@ -149,21 +151,49 @@ for(i in 1:nrow(clues_solicitados)){
 }
 saveRDS(lista_aportaciones_por_clues,file = "outputs/aportaciones_de_ageb_por_clues.rds")
 
+
+
 demograficos_scince_drop_geom=demograficos_scince |> 
   st_drop_geometry() |> dplyr::select(-CVEGEO,-CVE_AGEB,-NOM_MUN,-NOMGEO)
 demograficos_scince_drop_geom[demograficos_scince_drop_geom<0]=0
+demograficos_scince_drop_geom[is.na(demograficos_scince_drop_geom)]=0
 calculo_aportaciones_demograficos=lista_aportaciones_por_clues |> lapply(\(clue_i){#para cada clue, se definen todas las variables demográficas con la suma proporcional
-  #clue_i=lista_aportaciones_por_clues[[15]]
-  copia_demograficos_clue_i_T10=(diag(clue_i$V1 )%*%(demograficos_scince_drop_geom[clue_i$id,] |> as.matrix()))|> 
+  clue_i=lista_aportaciones_por_clues[[10]]
+  copia_demograficos_clue_i_T10=(diag(clue_i$V1 )%*%(demograficos_scince_drop_geom[clue_i$id,] |>
+                                                       dplyr::mutate(
+                                                         dplyr::across(
+                                                         .cols = dplyr::everything(),
+                                                         .fns = ~.x |>  as.numeric()
+                                                          )
+                                                       )
+                                                       |>  as.matrix()))|> 
     as.data.frame() |> 
     dplyr::summarise_all(\(x){sum(x,na.rm=T)})|> setNames(paste0(colnames(demograficos_scince_drop_geom ),"_T10") )
-  copia_demograficos_clue_i_T20=(diag(clue_i$V2 )%*%(demograficos_scince_drop_geom[clue_i$id,] |> as.matrix()))|> 
+  copia_demograficos_clue_i_T20=(diag(clue_i$V2 )%*%(demograficos_scince_drop_geom[clue_i$id,] |>
+                                                       dplyr::mutate(
+                                                         dplyr::across(
+                                                         .cols = dplyr::everything(),
+                                                         .fns = ~.x |>  as.numeric()
+                                                          )
+                                                       )|> as.matrix()))|> 
     as.data.frame() |> 
     dplyr::summarise_all(\(x){sum(x,na.rm=T)})|> setNames(paste0(colnames(demograficos_scince_drop_geom ),"_T20") )
-  copia_demograficos_clue_i_T40=(diag(clue_i$V3 )%*%(demograficos_scince_drop_geom[clue_i$id,] |> as.matrix()))|> 
+  copia_demograficos_clue_i_T40=(diag(clue_i$V3 )%*%(demograficos_scince_drop_geom[clue_i$id,] |>
+                                                       dplyr::mutate(
+                                                         dplyr::across(
+                                                           .cols = dplyr::everything(),
+                                                           .fns = ~.x |>  as.numeric()
+                                                         )
+                                                       )|> as.matrix()))|> 
     as.data.frame() |> 
     dplyr::summarise_all(\(x){sum(x,na.rm=T)})|> setNames(paste0(colnames(demograficos_scince_drop_geom ),"_T40") )
-  copia_demograficos_clue_i_T60=(diag(clue_i$V4 )%*%(demograficos_scince_drop_geom[clue_i$id,] |> as.matrix()))|> 
+  copia_demograficos_clue_i_T60=(diag(clue_i$V4 )%*%(demograficos_scince_drop_geom[clue_i$id,] |>
+                                                       dplyr::mutate(
+                                                         dplyr::across(
+                                                           .cols = dplyr::everything(),
+                                                           .fns = ~.x |>  as.numeric()
+                                                         )
+                                                       )|> as.matrix()))|> 
     as.data.frame() |> 
     dplyr::summarise_all(\(x){sum(x,na.rm=T)}) |> setNames(paste0(colnames(demograficos_scince_drop_geom ),"_T60") )
   return(list(copia_demograficos_clue_i_T10,
@@ -178,6 +208,8 @@ calculo_aportaciones_demograficos_df=calculo_aportaciones_demograficos_df |>
 
 calculo_aportaciones_demograficos_df |> write.csv("outputs/aportaciones_de_ageb_por_clues.csv",row.names = F)
 
+
+
 ##Vamos a guardar estos clues más cercanos
-cluesN1 |> dplyr::relocate(geometry,.after = dplyr::last_col()) |> dplyr::mutate(tiempo_promedio_CLUES_N2=ifelse((tiempo_promedio_CLUES_N2)>400,400,tiempo_promedio_CLUES_N2) ) |> 
-  st_write("outputs/cluesN1_info_accesibilidad.geojson",driver = "GeoJSON",append = F,delete_dsn = T)
+#cluesN1 |> dplyr::relocate(geometry,.after = dplyr::last_col()) |> dplyr::mutate(tiempo_promedio_CLUES_N2=ifelse((tiempo_promedio_CLUES_N2)>400,400,tiempo_promedio_CLUES_N2) ) |> 
+#  st_write("outputs/cluesN1_info_accesibilidad.geojson",driver = "GeoJSON",append = F,delete_dsn = T)
