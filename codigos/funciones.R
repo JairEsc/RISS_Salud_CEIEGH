@@ -188,8 +188,8 @@ estadisticas_dado_nivel_atencion_y_tiempo=function(nivel,tiempo){
     ) |> 
    dplyr::select(-tiempo_promedio_clues_N1_mas_cercano,-tiempo_promedio_clues_N2_mas_cercano,-tiempo_promedio_clues_N3_mas_cercano)
   
-  cat("Vamos imprimir conteo por localidad \n:")
-  print(conteo_por_localidad)
+  # cat("Vamos imprimir conteo por localidad \n:")
+  # print(conteo_por_localidad)
   
   conteo_por_municipio=conteo_por_municipio|> 
     dplyr::arrange(dplyr::desc(POB1)) |> 

@@ -121,7 +121,7 @@ tabInfraServer <- function(id, nivel_at,clues_en_operacion,sinerhias) {
         consulta_actual <- tryCatch({
           sinerhias_nivel_actual() |>
             dplyr::filter(dplyr::if_all(dplyr::all_of(selected), ~ . == 1)) |>
-            dplyr::select(CLUES) |>
+            dplyr::select(CLUES,NIVEL.ATENCION,geometry) |>
             dplyr::collect()
         }, error = function(e) {
           return(NULL)
@@ -129,11 +129,12 @@ tabInfraServer <- function(id, nivel_at,clues_en_operacion,sinerhias) {
         
         if (is.null(consulta_actual)) return(invisible(NULL))
         ##Actualizamos la frase
+        print("Sinerhias nivel actual:")
+        print(sinerhias_nivel_actual() |> dplyr::count() |> dplyr::collect())
+        print("Consulta actual:")
+        print(consulta_actual |> nrow())
         porcentaje(round(100 * nrow(consulta_actual) / (sinerhias_nivel_actual() |> dplyr::count() |> dplyr::collect()), 2))
-        clues_con_equipam <- clues_en_operacion |>##Esto se puede reemplazar por datas porque ambos tienen la geometría, pero lo dejamos pendiente
-          dplyr::filter(CLUES %in% consulta_actual$CLUES) |>
-          dplyr::select(CLUES,NIVEL.ATENCION,NOMBRE.DE.LA.INSTITUCION,NOMBRE.DE.LA.UNIDAD,MUNICIPIO,Tiempo_promedio_CLUES_N1_mas_cercano,Tiempo_promedio_CLUES_N2_mas_cercano,Tiempo_promedio_CLUES_N3_mas_cercano, geometry) |>
-          dplyr::collect() |>
+        clues_con_equipam <- consulta_actual |> 
           dplyr::mutate(geometry = sf::st_as_sfc(structure(geometry, class = "WKB"), EWKB = T)) |>
           st_as_sf()
         clues_con_equipamiento(clues_con_equipam)

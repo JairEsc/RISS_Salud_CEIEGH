@@ -6,6 +6,15 @@ capacidad_instalada=excel_ruta |> openxlsx::loadWorkbook() |> openxlsx::sheets()
 capacidad_instalada=capacidad_instalada |> setNames(excel_ruta |> openxlsx::loadWorkbook() |> openxlsx::sheets() )
 catalogo="inputs/Variables SINERHIAS_0526 Catalogo.xlsx" |> openxlsx::read.xlsx(sheet = "Variables",skipEmptyCols = T,check.names = T) 
 
+clues_en_operacion=openxlsx::read.xlsx("outputs/confidenciales/ESTABLECIMIENTO_SALUD_202604.xlsx")
+clues_en_operacion=clues_en_operacion |> 
+  dplyr::filter(CLAVE.DE.LA.ENTIDAD=='13') 
+clues_en_operacion=clues_en_operacion |> 
+  dplyr::mutate(LATITUD=as.numeric(LATITUD),
+                LONGITUD=as.numeric(LONGITUD))
+clues_en_operacion=clues_en_operacion |> 
+  dplyr::filter(LONGITUD<0 & LATITUD>0) |> 
+  st_as_sf(coords = c("LONGITUD","LATITUD"),crs=4326)
 capacidad_instalada_N1=capacidad_instalada[[1]]
 ##cero_en_todas_partes
 ((capacidad_instalada_N1[,4:ncol(capacidad_instalada_N1)] |> rowSums(na.rm = T))>0) |> all()#no es cero en todas partes
@@ -52,9 +61,12 @@ clues_en_operacion=st_read(local,"clues_en_operacion")
 ##Falta agregar datos calculados a los geojsons
 library(sf)
 
-st_write(capacidad_instalada_N1_tidy, sinerhias, "N1_CLUES_SINERHIAS", delete_layer = T)
-st_write(capacidad_instalada_N2_tidy, sinerhias, "N2_CLUES_SINERHIAS", delete_layer = T)
-st_write(capacidad_instalada_N3_tidy, sinerhias, "N3_CLUES_SINERHIAS", delete_layer = T)
+st_write(capacidad_instalada_N1_tidy |> 
+           dplyr::mutate(NIVEL.ATENCION='PRIMER NIVEL'), sinerhias, "N1_CLUES_SINERHIAS", delete_layer = T)
+st_write(capacidad_instalada_N2_tidy |> 
+           dplyr::mutate(NIVEL.ATENCION='SEGUNDO NIVEL'), sinerhias, "N2_CLUES_SINERHIAS", delete_layer = T)
+st_write(capacidad_instalada_N3_tidy |> 
+           dplyr::mutate(NIVEL.ATENCION='TERCER NIVEL'), sinerhias, "N3_CLUES_SINERHIAS", delete_layer = T)
 
 capacidades_instaladas=do.call(plyr::rbind.fill,capacidad_instalada[1:3])
 capacidades_instaladas=capacidad_instalada[[1]] |> 
@@ -70,7 +82,14 @@ capacidades_instaladas_tidy=capacidades_instaladas_tidy |>
   dplyr::mutate(dplyr::across(where(is.numeric),~tidyr::replace_na(., 0))) |> 
   dplyr::mutate(dplyr::across(where(is.numeric), as.integer))|> merge(clues_en_operacion |> dplyr::select(CLUES,geometry),by='CLUES',all.x=T) |> 
   dplyr::filter(!is.na(geometry))
-
+capacidades_instaladas_tidy=capacidades_instaladas_tidy |> 
+  dplyr::rowwise() |> 
+  dplyr::mutate(NIVEL.ATENCION=
+                  ifelse(CLUES%in%capacidad_instalada_N1_tidy$CLUES,"PRIMER NIVEL",
+                         ifelse(CLUES%in%capacidad_instalada_N2_tidy$CLUES,"SEGUNDO NIVEL","TERCER NIVEL"))) |> 
+  dplyr::relocate(NIVEL.ATENCION,.after = CLUES) |> 
+  dplyr::ungroup() |> 
+  st_as_sf()
 st_write(capacidades_instaladas_tidy, sinerhias, "CLUES_SINERHIAS", delete_layer = T,append=F)
 
 

@@ -5,7 +5,7 @@ con <- DBI::dbConnect(RSQLite::SQLite(), "clues_demograficos_municipios_simple.s
 ##Falta agregar datos calculados a los geojsons
 clues_en_operacion_s="outputs/clues_en_operacion_con_info_accesibilidad.geojson" |> st_read()
 clues_en_operacion_s=clues_en_operacion_s |> 
-  dplyr::select(CLUES,MUNICIPIO,LOCALIDAD,NOMBRE.DE.LA.UNIDAD,NIVEL.ATENCION,Conteo_N1_T10:SALUD10_T60,geometry)
+  dplyr::select(CLUES,MUNICIPIO,LOCALIDAD,NOMBRE.DE.LA.UNIDAD,NOMBRE.DE.LA.INSTITUCION,NIVEL.ATENCION,Conteo_N1_T10:SALUD10_T60,geometry)
 clues_en_operacion_s$CLUES |> nchar() |> unique()#CHAR(size)
 clues_en_operacion_s |> dplyr::select(Conteo_N1_T10:Conteo_N3_T60) |> st_drop_geometry() |> lapply(\(x){as.numeric(x)} )|> unlist() |> max()#SMALLINT
 clues_en_operacion_s |> dplyr::select(POB1_T10:SALUD10_T60) |> st_drop_geometry()|> lapply(\(x){as.numeric(x)} )|> unlist() |> max()#MEDIUMINT
