@@ -1,24 +1,36 @@
 ##A partir de la propuesta de trabajo del CEIEGH: 
 
-###SideBar + Mapa principal + (por definir. Posiblemente graphs)
+###SideBar + Mapa principal(Accesibilidad) + Estadísticas (Cobertura) + Infraestructura (SINERHIAS) 
 
-#En el sidebar se puede elegir el nivel de atención de clues en operación y los agebs (unidades de poblacion)
+#En el sidebar se puede elegir el nivel de atención de clues en operación Y privado/publico, 
+#- Los agebs (unidades de poblacion)
 
 #La elección de estas definen una consulta a clues de tipo punto. 
-#Se calcula la accesibilidad (se puede optimizar el cálculo de accesibilidad si pre-cargamos los puntos)
+  ## Nivel_K públicos y/o Nivel_K privados
 
-#En el mapa principal se agregan AGEBs. La elección de las clues define una repartición de población de AGEBs entre las clues a accesibilidad digna
+#Se calcula la accesibilidad para la elección generada. (Precargados a partir de rasters)
+
+#En el mapa principal se agregan AGEBs. 
+
 ###Coneval: tiempos promedio de traslado: https://www.coneval.org.mx/Informes/Evaluacion/Impacto/Acceso%20y%20Uso%20Efectivo.pdf (58 minutos es el indicador de tiempo estimado de traslado en caso de presentarse una emergencia Fuente: Elaboración del CONEVAL con datos del MCS-ENIGH 2008 y 2010.)
 ###Viene desagregado por tipo de afiliación, btw.
 
-#Propuesta: Un click sobre un clues dibuja la isocrona a niveles fijos. Que en teoría es consistente con la accesibilidad del sigeh
-            #pob a distancia digna total
-            #pob a distancia digna por afiliacion, etc.
-          #Una sola CLUES tiene cobertura de tanta poblacion a tanto minutos.
-#Propuesta: Un click sobre un AGEB muestra información de clues a menos de 58 minutos, (o 60),
+#Accesibilidad: 
+#-Un click sobre un clues dibuja la isocrona a niveles fijos. Que en teoría es consistente con la accesibilidad del sigeh
+            #-Poblacion estimada a 10 y 60 minutos
+            #-Poblacion estimada afiliada a SS a 10 y 60 minutos
+            #-Número de clues de nivel 2 (hospitales) a menos de 10 minutos
+#-Un click sobre un AGEB muestra información
             #pob total
-            #pob por afiliacion, etc.
-          #Conteo del número de clues por rango de tiempo
+            #municipio y localidad
+            #pob afiliada a ss
+            #Tiempo promedio a CLUES N1 y Nivel 2 más cercano
+  # Se pueden seleccionar varios AGEBS y genera un resumen por sumas y promedios.
+#Cobertura:
+#-Filtro sobre tiempo: Elegir un número equivale a filtrar localidades que tienen CLUES a más de tantos minutos
+#-Tarjetas de resumen con sumas: Pob Total, Pob Afiliada a SS, Municipios y localidades sin cobertura 
+#-Mapa mostrando las localidades fuera de cobertura
+#-Opción para descargar Municipios, Localidad y AGEBS. Información por grupos etarios agregada.
 
 library(shiny)
 library(shinybusy)
@@ -34,35 +46,32 @@ library(DT)
 library(rintrojs)
 library(dbplyr)
 library(archive)
-#source("codigos/csv_to_geojson.R")
-#source("codigos/token_mapbox.R")   #Ya no se usa
+library(shinyalert)
 source("codigos/funciones.R")
-#source("../../Reutilizables/Postgres_BUIG/conexion_local.R")#Aislar
-##Ya está aislada en supabase. Para leerla de texto a hexadecimal:
-#clues_en_operacion |> dplyr::select(CLUES,geometry) |> dplyr::collect() |> dplyr::mutate(geometry= sf::st_as_sfc(structure(geometry,class = "WKB" ),EWKB=T))
+
 source("codigos/SIGEH_isochrone.R")
-source("codigos/definicion_cartografia_demografia.R")
+source("codigos/definicion_cartografia_demografia.R")#demograficos_scince
 source("codigos/definicion_custom_markers.R")
 source("codigos/moduleTabStats.R")
 source("codigos/extras_css.R")
 local=DBI::dbConnect(RSQLite::SQLite(), "clues_demograficos_municipios_simple.sqlite")
+clues_en_operacion=dplyr::tbl(local,"clues_en_operacion")
+limites_municipales=sf::st_read(local,"limite_municipal")
+##Ya está aislada en supabase. Para leerla de texto a hexadecimal:
+#clues_en_operacion |> dplyr::select(CLUES,geometry) |> dplyr::collect() |> dplyr::mutate(geometry= sf::st_as_sfc(structure(geometry,class = "WKB" ),EWKB=T))
+#Usar .zip 
 #temp_dir=tempdir()
 #archive::archive_extract(archive = "outputs/confidenciales/clues_SINERHIAS_int.zip",password = Sys.getenv("pass"),dir = temp_dir)
 #sinerhias=DBI::dbConnect(RSQLite::SQLite(), list.files(temp_dir,pattern = "clues_SINERHIAS_int.sqlite",full.names = T))
+#Usar archivo directo
 sinerhias=DBI::dbConnect(RSQLite::SQLite(),  "outputs/confidenciales/clues_SINERHIAS_int.sqlite")
-clues_en_operacion=dplyr::tbl(local,"clues_en_operacion")
-limites_municipales=sf::st_read(local,"limite_municipal")
 source("codigos/moduleTabInfraestructura.R")
-#clues_en_operacion |> dplyr::select()
+
 paleta_spectral_comun=colorNumeric(palette = "Spectral",domain = c(10,20,40,60,90))
-
-#demograficos_scince proviene de definicion_cartografia_demografia
-
 
 ui <- dashboardPage(
   skin = "black",
-  dashboardHeader(title = "Visualizador de la accesibilidad y cobertura de la infraestructura de
-salud a nivel estatal",disable = F),
+  dashboardHeader(title = "Visualizador de la accesibilidad y cobertura de la infraestructura de salud a nivel estatal",disable = F),
   
   shinydashboardPlus::dashboardSidebar(
     tags$head(
@@ -72,19 +81,28 @@ salud a nivel estatal",disable = F),
       tags$style(HTML(leaflet_legend_css))
     ),
     tags$head(
-      tags$style(HTML(sidebar_last_child_css))
+      tags$style(HTML(sidebar_last_child_css)),
+      tags$style(HTML("
+        .sweet-alert h2 { font-size: 20px !important; margin: 10px 0 !important; }
+        .sweet-alert { width: 350px !important; padding: 15px !important; left: 50% !important; margin-left: -175px !important; }
+        .sweet-alert .lead { font-size: 14px !important; }
+        .shinyalert-checkboxes { text-align: left; margin: 10px auto; width: fit-content; }
+      "))
     ),
     uiOutput("userpanel"),
     
     div(class = "sidebar-controls",
         introBox(id = "tour_step_2_nivel", data.step = 1, data.intro = "placeholder",
+          div(style='display:flex',
           selectInput("nivel_at",
                       label = "Nivel de atención", 
                       choices = c("1er nivel" = "PRIMER NIVEL",
                                   "2do nivel" = "SEGUNDO NIVEL",
                                   "3er nivel" = "TERCER NIVEL",
                                   "Todos los niveles"='CUALQUIER NIVEL'),
-                      selectize = TRUE,selected ="SEGUNDO NIVEL" )
+                      selectize = TRUE,selected ="SEGUNDO NIVEL" ),
+          actionButton("filtrarPublicoPrivado",class="btn-primary",icon = icon("filter"),label = "")
+        )
         )
     ),
     shinyjs::useShinyjs(),
@@ -133,7 +151,11 @@ lista_rasters=list.files("inputs/rasters/",full.names = T) |> sort() |> lapply(r
 shinyApp(ui, function(input, output,session) {
   ###Lista de valores reactivos utilizables
   clues_solicitadosss=reactiveValues(df=NULL)
-
+  memoriaPublicosPrivados=reactiveValues(
+    publicos = TRUE, 
+    privados = TRUE,
+    modal_open = FALSE
+  )
   output$mapa_principal=renderLeaflet({
     #Mapa con tiles por defecto y barra de herramientas para dibujar polígonos
     leaflet() |> addTiles() |> 
@@ -148,13 +170,29 @@ shinyApp(ui, function(input, output,session) {
                   label=paste0("Municipio:" ,limites_municipales$NOM_MUN),group='municipios')
   })
   #Agregamos el select (nivel de atencion) con debounce
-  input_nivel_at=reactive({
-    input$nivel_at
+  nivel_atencion_gatekeeper_inputs <- reactive({
+    if (memoriaPublicosPrivados$modal_open) {
+      req(FALSE) # Silently halt execution while modal is open
+    }
+    
+    list(
+      nivel = input$nivel_at,
+      publicos = memoriaPublicosPrivados$publicos,
+      privados = memoriaPublicosPrivados$privados
+    )
   })
-  input_nivel_at_d=input_nivel_at |> debounce(1000)
+  
+  input_nivel_at_d <- nivel_atencion_gatekeeper_inputs |> debounce(1000)
+
+  #input_nivel_at_d=input_nivel_at |> debounce(1000)
   observeEvent(input_nivel_at_d(),
     {
+      tipo_filtro <- c()
+      if(input_nivel_at_d()$publicos) tipo_filtro <- c(tipo_filtro, "Público")
+      if(input_nivel_at_d()$privados) tipo_filtro <- c(tipo_filtro, "Privado")
+      print(input_nivel_at_d())
       clues_solicitados=clues_en_operacion |> dplyr::filter(NIVEL.ATENCION==input$nivel_at | input$nivel_at=="CUALQUIER NIVEL" ) |> 
+        dplyr::filter(archivo_origen%in%tipo_filtro) |> 
         dplyr::select(CLUES,MUNICIPIO,LOCALIDAD,NOMBRE.DE.LA.UNIDAD,NIVEL.ATENCION,Conteo_N1_T10:SALUD10_T60,geometry) |>
         dplyr::collect() |> 
         dplyr::mutate(geometry= sf::st_as_sfc(structure(geometry,class = "WKB" ),EWKB=T)) |> st_as_sf()
@@ -366,7 +404,29 @@ shinyApp(ui, function(input, output,session) {
     ##Se reutiliza el método de arriba con este polígono nuevo.
     AccesibilidadPoligono(data_c_geo)
   })
-  
+  observeEvent(input$filtrarPublicoPrivado,{
+    print("clickeado")
+    memoriaPublicosPrivados$modal_open <- TRUE
+    shinyalert(
+      html = TRUE,
+      text = tagList(
+        div(class = "shinyalert-checkboxes",
+            checkboxInput("publicas_", label = "Públicas", value = memoriaPublicosPrivados$publicos),
+            checkboxInput("privadas_", label = "Privadas", value = memoriaPublicosPrivados$privados)
+        )
+      ),
+      callbackR = function(value) {
+        if(isTRUE(value)) { 
+          memoriaPublicosPrivados$publicos <- input$publicas_
+          memoriaPublicosPrivados$privados <- input$privadas_
+        }
+        memoriaPublicosPrivados$modal_open <- FALSE 
+      },
+      closeOnClickOutside = TRUE,
+      title = "Selecciona el tipo de CLUES",
+      confirmButtonText = "Aceptar"
+    )
+  })
   # Tour Guide Implementation
   observeEvent(input$start_tour, {
     introjs(session, 
