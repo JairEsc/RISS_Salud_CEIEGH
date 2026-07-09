@@ -1,4 +1,16 @@
-
+paleta_spectral_comun=colorNumeric(palette = "Spectral",domain = c(10,20,40,60,90))
+ProxyMapaPrincipal=function(limites_municipales){
+  leaflet() |> addTiles() |> 
+    setView(lng = -98.83284,lat = 20.45979,zoom = 9) |> 
+    leaflet.extras::addDrawToolbar(targetGroup = "especiales",
+                                   position = "topleft",
+                                   polylineOptions =F,circleOptions = F,
+                                   rectangleOptions = F,markerOptions = F,
+                                   circleMarkerOptions = F,
+                                   editOptions = editToolbarOptions(edit = F,remove = T,allowIntersection = F)) |> 
+    addPolygons(data=limites_municipales,color = "black",weight = 1,fillColor = "lightgray",opacity = 0.7,fillOpacity = 0.1,
+                label=paste0("Municipio:" ,limites_municipales$NOM_MUN),group='municipios')
+}
 ##################################################
 generadorPopUpContentDemog=function(poligono){
   return(

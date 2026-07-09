@@ -16,21 +16,24 @@
 ###Viene desagregado por tipo de afiliación, btw.
 
 #Accesibilidad: 
-#-Un click sobre un clues dibuja la isocrona a niveles fijos. Que en teoría es consistente con la accesibilidad del sigeh
+###-Un click sobre un clues dibuja la isocrona a niveles fijos. Que en teoría es consistente con la accesibilidad del sigeh
             #-Poblacion estimada a 10 y 60 minutos
             #-Poblacion estimada afiliada a SS a 10 y 60 minutos
             #-Número de clues de nivel 2 (hospitales) a menos de 10 minutos
-#-Un click sobre un AGEB muestra información
+###-Un click sobre un AGEB muestra información
             #pob total
             #municipio y localidad
             #pob afiliada a ss
             #Tiempo promedio a CLUES N1 y Nivel 2 más cercano
-  # Se pueden seleccionar varios AGEBS y genera un resumen por sumas y promedios.
+### Se pueden seleccionar varios AGEBS y genera un resumen por sumas y promedios.
 #Cobertura:
-#-Filtro sobre tiempo: Elegir un número equivale a filtrar localidades que tienen CLUES a más de tantos minutos
-#-Tarjetas de resumen con sumas: Pob Total, Pob Afiliada a SS, Municipios y localidades sin cobertura 
-#-Mapa mostrando las localidades fuera de cobertura
-#-Opción para descargar Municipios, Localidad y AGEBS. Información por grupos etarios agregada.
+###-Filtro sobre tiempo: Elegir un número equivale a filtrar localidades que tienen CLUES a más de tantos minutos
+###-Tarjetas de resumen con sumas: Pob Total, Pob Afiliada a SS, Municipios y localidades sin cobertura 
+###-Mapa mostrando las localidades fuera de cobertura
+###-Opción para descargar Municipios, Localidad y AGEBS. Información por grupos etarios agregada.
+#Infraestructura:
+##Solamente hay datos para tipo público. 
+##Dado un catálogo, permite filtrar CLUES del nivel seleccionado que satisfacen la condición de intersección (Y) de las condiciones agregadas
 
 library(shiny)
 library(shinybusy)
@@ -47,27 +50,32 @@ library(rintrojs)
 library(dbplyr)
 library(archive)
 library(shinyalert)
-source("codigos/funciones.R")
 
 source("codigos/SIGEH_isochrone.R")
 source("codigos/definicion_cartografia_demografia.R")#demograficos_scince
 source("codigos/definicion_custom_markers.R")
-source("codigos/moduleTabStats.R")
 source("codigos/extras_css.R")
-local=DBI::dbConnect(RSQLite::SQLite(), "clues_demograficos_municipios_simple.sqlite")
+local=DBI::dbConnect(RSQLite::SQLite(), "clues_demograficos_municipios_simple.sqlite")#Contiene CLUES, Municipios y AGEBS
 clues_en_operacion=dplyr::tbl(local,"clues_en_operacion")
 limites_municipales=sf::st_read(local,"limite_municipal")
+lista_rasters=list.files("inputs/rasters/",full.names = T) |> sort() |> lapply(raster::raster)
 ##Ya está aislada en supabase. Para leerla de texto a hexadecimal:
 #clues_en_operacion |> dplyr::select(CLUES,geometry) |> dplyr::collect() |> dplyr::mutate(geometry= sf::st_as_sfc(structure(geometry,class = "WKB" ),EWKB=T))
 #Usar .zip 
 #temp_dir=tempdir()
 #archive::archive_extract(archive = "outputs/confidenciales/clues_SINERHIAS_int.zip",password = Sys.getenv("pass"),dir = temp_dir)
 #sinerhias=DBI::dbConnect(RSQLite::SQLite(), list.files(temp_dir,pattern = "clues_SINERHIAS_int.sqlite",full.names = T))
+
 #Usar archivo directo
 sinerhias=DBI::dbConnect(RSQLite::SQLite(),  "outputs/confidenciales/clues_SINERHIAS_int.sqlite")
+
+source("codigos/funciones.R")
+#Cobertura
+source("codigos/moduleTabStats.R")
+#Infraestructura
 source("codigos/moduleTabInfraestructura.R")
 
-paleta_spectral_comun=colorNumeric(palette = "Spectral",domain = c(10,20,40,60,90))
+
 
 ui <- dashboardPage(
   skin = "black",
@@ -147,50 +155,46 @@ ui <- dashboardPage(
     )
   )
 )
-lista_rasters=list.files("inputs/rasters/",full.names = T) |> sort() |> lapply(raster::raster)
+
 shinyApp(ui, function(input, output,session) {
   ###Lista de valores reactivos utilizables
   clues_solicitadosss=reactiveValues(df=NULL)
   memoriaPublicosPrivados=reactiveValues(
+    nivel_at="SEGUNDO NIVEL",
     publicos = TRUE, 
     privados = TRUE,
-    modal_open = FALSE
+    modal_open = FALSE,
+    actualizar=TRUE
   )
   output$mapa_principal=renderLeaflet({
     #Mapa con tiles por defecto y barra de herramientas para dibujar polígonos
-    leaflet() |> addTiles() |> 
-      setView(lng = -98.83284,lat = 20.45979,zoom = 9) |> 
-      leaflet.extras::addDrawToolbar(targetGroup = "especiales",
-                                     position = "topleft",
-                                     polylineOptions =F,circleOptions = F,
-                                     rectangleOptions = F,markerOptions = F,
-                                     circleMarkerOptions = F,
-                                     editOptions = editToolbarOptions(edit = F,remove = T,allowIntersection = F)) |> 
-      addPolygons(data=limites_municipales,color = "black",weight = 1,fillColor = "lightgray",opacity = 0.7,fillOpacity = 0.1,
-                  label=paste0("Municipio:" ,limites_municipales$NOM_MUN),group='municipios')
+    ProxyMapaPrincipal(limites_municipales = limites_municipales |> st_transform(4326))
   })
   #Agregamos el select (nivel de atencion) con debounce
   nivel_atencion_gatekeeper_inputs <- reactive({
     if (memoriaPublicosPrivados$modal_open) {
-      req(FALSE) # Silently halt execution while modal is open
+      req(FALSE) # Cortar proceso
     }
     
     list(
-      nivel = input$nivel_at,
+      nivel_at = memoriaPublicosPrivados$nivel_at,
       publicos = memoriaPublicosPrivados$publicos,
-      privados = memoriaPublicosPrivados$privados
+      privados = memoriaPublicosPrivados$privados,
+      actualizar=memoriaPublicosPrivados$actualizar
     )
   })
   
   input_nivel_at_d <- nivel_atencion_gatekeeper_inputs |> debounce(1000)
 
-  #input_nivel_at_d=input_nivel_at |> debounce(1000)
   observeEvent(input_nivel_at_d(),
     {
+      req(memoriaPublicosPrivados$actualizar)
       tipo_filtro <- c()
       if(input_nivel_at_d()$publicos) tipo_filtro <- c(tipo_filtro, "Público")
       if(input_nivel_at_d()$privados) tipo_filtro <- c(tipo_filtro, "Privado")
-      print(input_nivel_at_d())
+      #print(input_nivel_at_d())
+      #print("identical")
+      #print(identical(c(input_nivel_at_d()$nivel,input_nivel_at_d()$publicos,input_nivel_at_d()$privados),memoriaPublicosPrivados$actualizar) )
       clues_solicitados=clues_en_operacion |> dplyr::filter(NIVEL.ATENCION==input$nivel_at | input$nivel_at=="CUALQUIER NIVEL" ) |> 
         dplyr::filter(archivo_origen%in%tipo_filtro) |> 
         dplyr::select(CLUES,MUNICIPIO,LOCALIDAD,NOMBRE.DE.LA.UNIDAD,NIVEL.ATENCION,Conteo_N1_T10:SALUD10_T60,geometry) |>
@@ -417,16 +421,36 @@ shinyApp(ui, function(input, output,session) {
       ),
       callbackR = function(value) {
         if(isTRUE(value)) { 
+          print("Identico:")
+          print(identical(c(
+            input$nivel_at,input$publicas_,input$privadas_
+          ),
+          c(
+            memoriaPublicosPrivados$nivel_at,memoriaPublicosPrivados$publicos,memoriaPublicosPrivados$privados
+          )))
+          if(!identical(c(
+            input$nivel_at,input$publicas_,input$privadas_
+          ),
+                       c(
+                         memoriaPublicosPrivados$nivel_at,memoriaPublicosPrivados$publicos,memoriaPublicosPrivados$privados
+                       ))){
+            memoriaPublicosPrivados$actualizar=TRUE
+          }
+          else{memoriaPublicosPrivados$actualizar=FALSE}
+          memoriaPublicosPrivados$nivel_at <- input$nivel_at
           memoriaPublicosPrivados$publicos <- input$publicas_
           memoriaPublicosPrivados$privados <- input$privadas_
         }
         memoriaPublicosPrivados$modal_open <- FALSE 
+        
       },
       closeOnClickOutside = TRUE,
       title = "Selecciona el tipo de CLUES",
       confirmButtonText = "Aceptar"
     )
   })
+  observeEvent(input$nivel_at,{memoriaPublicosPrivados$nivel_at=input$nivel_at
+  memoriaPublicosPrivados$actualizar=TRUE})
   # Tour Guide Implementation
   observeEvent(input$start_tour, {
     introjs(session, 
