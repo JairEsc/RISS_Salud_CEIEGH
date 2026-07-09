@@ -175,7 +175,6 @@ shinyApp(ui, function(input, output,session) {
     if (memoriaPublicosPrivados$modal_open) {
       req(FALSE) # Cortar proceso
     }
-    
     list(
       nivel_at = memoriaPublicosPrivados$nivel_at,
       publicos = memoriaPublicosPrivados$publicos,
@@ -192,9 +191,6 @@ shinyApp(ui, function(input, output,session) {
       tipo_filtro <- c()
       if(input_nivel_at_d()$publicos) tipo_filtro <- c(tipo_filtro, "Público")
       if(input_nivel_at_d()$privados) tipo_filtro <- c(tipo_filtro, "Privado")
-      #print(input_nivel_at_d())
-      #print("identical")
-      #print(identical(c(input_nivel_at_d()$nivel,input_nivel_at_d()$publicos,input_nivel_at_d()$privados),memoriaPublicosPrivados$actualizar) )
       clues_solicitados=clues_en_operacion |> dplyr::filter(NIVEL.ATENCION==input$nivel_at | input$nivel_at=="CUALQUIER NIVEL" ) |> 
         dplyr::filter(archivo_origen%in%tipo_filtro) |> 
         dplyr::select(CLUES,MUNICIPIO,LOCALIDAD,NOMBRE.DE.LA.UNIDAD,NIVEL.ATENCION,Conteo_N1_T10:SALUD10_T60,geometry) |>
@@ -216,16 +212,10 @@ shinyApp(ui, function(input, output,session) {
       )
       iso1_sigeh=raster::rasterToContour(tiempo_zona_auto, levels = c(10,20,40,60,90))|> st_as_sf() |> st_set_crs(st_crs("EPSG:32614")) |>st_transform(st_crs("EPSG:4326"))
       leafletProxy("mapa_principal") |> ##Esta función se puede generalizar y aislar
-        clearMarkers() |> 
-        clearImages() |> 
-        clearGroup("CLUES") |> 
-        removeShape(layerId = paste0("Isocronas",1:nrow(iso1_sigeh))) |> 
-        removeControl(layerId = "Accesibilidad en minutos2") |>
+        clearProxy(markers = T,images = T,group = "CLUES",shapes =paste0("Isocronas",1:nrow(iso1_sigeh)),controls = "Accesibilidad en minutos2" ) |> 
         addMarkers_custom(data = clues_solicitados) |> 
         addRasterImage(projectRasterForLeaflet(tiempo_zona_auto,method = "ngb"),colors = "Spectral",group = "Accesibilidad carretera (en minutos)") |> 
         addRasterImage(projectRasterForLeaflet(tiempo_zona_peatonal,method = "ngb"),colors = "Spectral",group = "Accesibilidad peatonal (en minutos)") |> 
-        # addPolylines(data=iso1_sigeh  ,
-        #              color=paleta_spectral_comun(iso1_sigeh$level |> as.numeric()),opacity = 1,group = "Isocronas",layerId = paste0("Isocronas",1:nrow(iso1_sigeh))) |>
         addLayersControl(overlayGroups = c("Accesibilidad carretera (en minutos)","Accesibilidad peatonal (en minutos)","CLUES")) |> 
         hideGroup("Accesibilidad peatonal (en minutos)")
   })
@@ -234,19 +224,18 @@ shinyApp(ui, function(input, output,session) {
   input_checkbox_agebs=reactive({
     input$agebs
   })
-  input_checkbox_agebs_d=input_checkbox_agebs |> debounce(500)
-  observeEvent(input_checkbox_agebs_d(),##Esta función se puede aislar
+  input_checkbox_agebs_d=input_checkbox_agebs |> debounce(100)
+  observeEvent(input_checkbox_agebs_d(),##Esta función se aisló
     {
-      if(input$agebs==T){
+      if(input$agebs){
         leafletProxy("mapa_principal") |>
           addPolygons(data=demograficos_scince,label = paste0(demograficos_scince$CVEGEO,"<br>",
-                                                   "Pob. Total:  ",demograficos_scince$POB1,"<br>",
-                                                   "Pob. Afiliada SS:  ",demograficos_scince$SALUD1,"<br>"
+                                                              "Pob. Total:  ",demograficos_scince$POB1,"<br>",
+                                                              "Pob. Afiliada SS:  ",demograficos_scince$SALUD1,"<br>"
           ) |> lapply(\(x){htmltools::HTML(x)}),
           group="AGEBs",layerId = paste0("AGEBs",1:nrow(demograficos_scince)))
       }
       else{
-        #print(input$agebs)
         leafletProxy("mapa_principal") |>
           removeShape(paste0("AGEBs",1:nrow(demograficos_scince)))
       }
@@ -255,107 +244,38 @@ shinyApp(ui, function(input, output,session) {
   lista_objetos_especiales <- reactiveVal(value = 0)##Especiales son los que se dibujan. No necesito la lista, nomás saber si está vacía
   
   observeEvent(input$mapa_principal_marker_click,{# Click sobre un clues
-    datos_del_clues=clues_solicitadosss$df |> ##Estamos conservando todas las columnas del CLUEs aunque no todas se muestran
-      dplyr::filter(dplyr::row_number() == as.numeric(gsub("CLUES","",input$mapa_principal_marker_click$id) )) ##Datos del clues seleccionado
-    punto_referencia_fijo=st_point(c(input$mapa_principal_marker_click$lng ,input$mapa_principal_marker_click$lat)) |> st_sfc(crs = 4326)
-    #print(punto_referencia_fijo)
-    #isocronas_niveles_fijos=getIsochrones_mapbox(coord = punto_referencia_fijo |> unlist() |> paste(collapse = ","),
-    #                                             times =c(10,20,40,60) ) |> st_as_sf() |> st_transform(st_crs("EPSG:4326"))
-    isocronas_niveles_fijos <- tryCatch({
-      res_raster <- gdistance::accCost(T.GC, punto_referencia_fijo |> st_transform(st_crs("EPSG:32614")) |> unlist())
-      
-    contornos <- raster::rasterToContour(res_raster, levels = 10 * c(1:9)) |> 
-      st_as_sf() |> 
-      st_set_crs(st_crs("EPSG:32614"))
-    #print(contornos)
-    contornos 
-    }, error = function(e) {
-      message("Error en accCost: Generando círculos concéntricos como respaldo.")
-      punto_proyectado = punto_referencia_fijo |> st_transform(st_crs("EPSG:32614"))
-      # Creamos una secuencia de radios
-      radios <- seq(100, 2500, by = 300)
-      circulos <- do.call(rbind, lapply(radios, function(r) {
-        st_buffer(punto_proyectado, dist = r) |> st_as_sf() |> 
-          dplyr::mutate(level = as.character(r / 30))
-      }))
-      
-      return(circulos)
-    })
-    isocronas_niveles_fijos <- isocronas_niveles_fijos |> 
-      dplyr::arrange(dplyr::desc(level)) |> 
-      st_transform(st_crs("EPSG:4326"))
     
+    isocronas_niveles_fijos=handleMarkerClick(df=clues_solicitadosss$df,input_click=input$mapa_principal_marker_click)
+    
+    ##Lo agregamos al mapa principal
     leafletProxy("mapa_principal") |> 
       addPolygons(
-        data = isocronas_niveles_fijos,
+        data = isocronas_niveles_fijos[['isocronas']],
         group = "especiales",
-        color = paleta_spectral_comun(as.numeric(isocronas_niveles_fijos$level)),
+        color = paleta_spectral_comun(as.numeric(isocronas_niveles_fijos[['isocronas']]$level)),
         opacity = 1,
-        fillColor = paleta_spectral_comun(as.numeric(isocronas_niveles_fijos$level)),
+        fillColor = paleta_spectral_comun(as.numeric(isocronas_niveles_fijos[['isocronas']]$level)),
         fillOpacity = 0.7
       )
-    #Generar polígono y mandar a llamar AccesibilidadPoligono o una variante. 
-    
     ##Cuando se agregue una capa de dibujo se prende el botoncito para borrar. Cuando se limpie todo, se descolorea. 
-    ##leaflet-draw-edit-remove
     lista_objetos_especiales(1)
-    #print(isocronas_niveles_fijos[1,] |> cbind(datos_del_clues |> st_drop_geometry()))
-    AccesibilidadCLUES(poligono = isocronas_niveles_fijos[1,] |> cbind(datos_del_clues |> st_drop_geometry()),centro=punto_referencia_fijo)
-    ##Al final no estuvo tan chido el mapbox. Da más problemas que soluciones. 
-    ##Mejor calcularlo con accesibilidad sigeh y agregar datos de cobertura (pendiente)
+    AccesibilidadCLUES(poligono =isocronas_niveles_fijos[['sf_datos_clues']] )##Agrega el pop-up con datos demograficos
   })
   
-  observeEvent(input$mapa_principal_draw_all_features,{
-    if(length(input$mapa_principal_draw_all_features$features) == 0){
-      lista_objetos_especiales(0)
-    } else {
-      lista_objetos_especiales(1)
-    }
-  })
-  
-  observe({
-    if(lista_objetos_especiales() == 0){
-      shinyjs::runjs(code =funcionColorearBotonBorrar("remove") )
-    }
-    else{
-      shinyjs::runjs(code =funcionColorearBotonBorrar("add") )
-    }
-  })
-  observe({
+  observe({##Agregar el legend cuando estemos viendo "Cualquier nivel'. Por eso usamos 
+    #Observe y no observeEvent. Porque podría haber más de un trigger
     if ("CLUES" %in% input$mapa_principal_groups & input$nivel_at=='CUALQUIER NIVEL') {
       #print("Sí se muestra el legend de clues")
-      leafletProxy("mapa_principal") |> 
-            addLegend(
-              position = "bottomleft",
-              colors = unname(colores_markers),
-              labels = c("Primer Nivel", "Segundo Nivel", "Tercer Nivel"),
-              opacity = 1,
-              title = HTML("<div class='legend-title'>Nivel de Atención</div>"),
-              group = "CLUES",
-              layerId = "leyenda_clues"
-            )
+      leafletProxy("mapa_principal") |> addLegend_custom(legendCustom='clues')
     } else {
       leafletProxy("mapa_principal") |> removeControl("leyenda_clues")
     }
   })
-  observe({
+  observe({##Agregar el legend cuando estemos viendo un raster de accesibilidad. Ya sea carretera o peatonal
     if("Accesibilidad carretera (en minutos)" %in% input$mapa_principal_groups 
        | 
        "Accesibilidad peatonal (en minutos)" %in% input$mapa_principal_groups){
-      leafletProxy("mapa_principal") |> addLegend(
-        position = "bottomright",
-        pal = colorNumeric(palette = "Spectral", domain = c(10, 90)),
-        values = c(10, 20, 40, 60, 90),
-        title = "Accesibilidad",
-        opacity = 0.85,
-        #group = "Accesibilidad en minutos",
-        layerId = "Accesibilidad en minutos2",
-        labFormat = labelFormat(
-          suffix = " min.",
-          between = " a ",
-          transform = function(x) x
-        )
-      ) 
+      leafletProxy("mapa_principal") |> addLegend_custom(legendCustom = "raster")
     }
     else{
       leafletProxy("mapa_principal") |> removeControl("Accesibilidad en minutos2")
@@ -368,40 +288,34 @@ shinyApp(ui, function(input, output,session) {
   #   
   observeEvent(input$mapa_principal_shape_click,{
     ###Solamente si es click sobre un ageb. 
-    #print(input$mapa_principal_shape_click)
     if(!is.null(input$mapa_principal_shape_click$id)){
-      #print("id-------------")
-      #print(input$mapa_principal_shape_click$id)
       if(grepl(pattern = "AGEB",x = input$mapa_principal_shape_click$id) ){
-        
         poligono=demograficos_scince[as.numeric(gsub("AGEBs","",input$mapa_principal_shape_click$id)),]
         AccesibilidadPoligono(poligono)##Se mandan todas las columnas aunque no se muestran todas
-
       }
     }
 
   })
   observeEvent(input$mapa_principal_draw_new_feature,{
     cat("\n\nNew Feature\n")
-    data <- input$mapa_principal_draw_new_feature # list
-    data <- jsonlite::toJSON(data, auto_unbox = TRUE) # string
-    data <- geojsonio::geojson_sf(data) # sf
+    data=drawToSf(input$mapa_principal_draw_new_feature)
+    #sf
     ##Dado un dibujo, se calculan las intersecciones no vacías, se estima la población y viviendas
     ##Se estima la accesibilidad a CLUES por rangos
-    interseccion_agebs=st_intersection(demograficos_scince,y = data)
+    interseccion_agebs=st_filter(demograficos_scince, data)#Se prefiere st_filter sobre st_intersection. Ver no_usar_benchmark_interseccion_poligonos.R
     n_poligonos_involucrados=interseccion_agebs |> nrow()
+    
     ##Resumir las intersecciones como la suma
     data_c_geo=data |> dplyr::bind_cols( interseccion_agebs |>
-                       dplyr::select(POB1:SALUD10,CVEGEO,NOM_MUN:NOMGEO,CLUES_N1_10:nombre_clues_N3_mas_cercano) |> ##Aquí sí se eligen menos coluumnas 
-                       st_drop_geometry() |> 
-                       dplyr::mutate(dplyr::across(dplyr::everything(), ~ ifelse(.x < 0, NA, .x) )) |> 
-                       dplyr::summarise_all(.funs = \(x){ifelse(is.character(x),paste0(unique(x),collapse = ", "),sum(x,na.rm=T))}) ) |> ##Suma o concat según el tipo de la variable
-                       dplyr::mutate(
-                         tiempo_promedio_clues_N1_mas_cercano=tiempo_promedio_clues_N1_mas_cercano/n_poligonos_involucrados,
-                         tiempo_promedio_clues_N2_mas_cercano=tiempo_promedio_clues_N2_mas_cercano/n_poligonos_involucrados,
-                         tiempo_promedio_clues_N3_mas_cercano=tiempo_promedio_clues_N3_mas_cercano/n_poligonos_involucrados
-                                      )
-    #print(data_c_geo)
+                                           dplyr::select(POB1:SALUD10,CVEGEO,NOM_MUN:NOMGEO,CLUES_N1_10:nombre_clues_N3_mas_cercano) |> ##Aquí sí se eligen menos coluumnas 
+                                           st_drop_geometry() |> 
+                                           dplyr::mutate(dplyr::across(dplyr::where(is.numeric), ~ ifelse(.x < 0, NA, .x) )) |> 
+                                           dplyr::summarise_all(.funs = \(x){ifelse(is.character(x),paste0(unique(x),collapse = ", "),sum(x,na.rm=T))}) ) |> ##Suma o concat según el tipo de la variable
+      dplyr::mutate(
+        tiempo_promedio_clues_N1_mas_cercano=tiempo_promedio_clues_N1_mas_cercano/n_poligonos_involucrados,
+        tiempo_promedio_clues_N2_mas_cercano=tiempo_promedio_clues_N2_mas_cercano/n_poligonos_involucrados,
+        tiempo_promedio_clues_N3_mas_cercano=tiempo_promedio_clues_N3_mas_cercano/n_poligonos_involucrados
+      )
     if(n_poligonos_involucrados>10){
       data_c_geo=data_c_geo|>dplyr::select(-NOMGEO)|>dplyr::mutate(NOMGEO=paste0(n_poligonos_involucrados," AGEBs y localidades"))
     }
@@ -409,7 +323,6 @@ shinyApp(ui, function(input, output,session) {
     AccesibilidadPoligono(data_c_geo)
   })
   observeEvent(input$filtrarPublicoPrivado,{
-    print("clickeado")
     memoriaPublicosPrivados$modal_open <- TRUE
     shinyalert(
       html = TRUE,
@@ -421,13 +334,6 @@ shinyApp(ui, function(input, output,session) {
       ),
       callbackR = function(value) {
         if(isTRUE(value)) { 
-          print("Identico:")
-          print(identical(c(
-            input$nivel_at,input$publicas_,input$privadas_
-          ),
-          c(
-            memoriaPublicosPrivados$nivel_at,memoriaPublicosPrivados$publicos,memoriaPublicosPrivados$privados
-          )))
           if(!identical(c(
             input$nivel_at,input$publicas_,input$privadas_
           ),
@@ -442,9 +348,8 @@ shinyApp(ui, function(input, output,session) {
           memoriaPublicosPrivados$privados <- input$privadas_
         }
         memoriaPublicosPrivados$modal_open <- FALSE 
-        
       },
-      closeOnClickOutside = TRUE,
+      closeOnClickOutside = F,closeOnEsc = F,
       title = "Selecciona el tipo de CLUES",
       confirmButtonText = "Aceptar"
     )
@@ -488,7 +393,22 @@ shinyApp(ui, function(input, output,session) {
               )
             ))
   })
-  
+  ##Atemporales
+  observeEvent(input$mapa_principal_draw_all_features,{
+    if(length(input$mapa_principal_draw_all_features$features) == 0){
+      lista_objetos_especiales(0)
+    } else {
+      lista_objetos_especiales(1)
+    }
+  })
+  observe({
+    if(lista_objetos_especiales() == 0){
+      shinyjs::runjs(code =funcionColorearBotonBorrar("remove") )
+    }
+    else{
+      shinyjs::runjs(code =funcionColorearBotonBorrar("add") )
+    }
+  })
   tabStatsServer("tab_stats",nivel_at = reactive(input$nivel_at))##Ya la tenía "independiente", así que aproveché para consumirla como un módulo
   tabInfraServer("tab_infra",nivel_at = reactive(input$nivel_at),clues_en_operacion=clues_en_operacion,sinerhias=sinerhias)##Ya la tenía "independiente", así que aproveché para consumirla como un módulo
 

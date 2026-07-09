@@ -11,6 +11,88 @@ ProxyMapaPrincipal=function(limites_municipales){
     addPolygons(data=limites_municipales,color = "black",weight = 1,fillColor = "lightgray",opacity = 0.7,fillOpacity = 0.1,
                 label=paste0("Municipio:" ,limites_municipales$NOM_MUN),group='municipios')
 }
+clearProxy=function(proxy,markers=T,images=T,group='CLUES',shapes=layerIds,controls=layerIds){
+  proxy_mod=proxy
+  if (markers)  proxy_mod <- proxy_mod |> leaflet::clearMarkers()
+  if (images)   proxy_mod <- proxy_mod |> leaflet::clearImages()
+  if (!is.null(group))    proxy_mod <- proxy_mod |> leaflet::clearGroup(group)
+  if (!is.null(shapes)) {
+    proxy_mod <- proxy_mod |> leaflet::removeShape(layerId = shapes)
+  }
+  if (!is.null(controls)) {
+    proxy_mod <- proxy_mod |> leaflet::removeControl(layerId = controls)
+  }
+  return(proxy_mod)
+}
+handleMarkerClick=function(df,input_click,T.GC=T.GC){
+  datos_del_clues=df |> ##Estamos conservando todas las columnas del CLUEs aunque no todas se muestran
+    dplyr::filter(dplyr::row_number() == as.numeric(gsub("CLUES","",input_click$id) )) ##Datos del clues seleccionado
+  punto_referencia_fijo=st_point(c(input_click$lng ,input_click$lat)) |> st_sfc(crs = 4326)
+
+  isocronas_niveles_fijos <- tryCatch({
+    res_raster <- gdistance::accCost(T.GC, punto_referencia_fijo |> st_transform(st_crs("EPSG:32614")) |> unlist())
+    
+    contornos <- raster::rasterToContour(res_raster, levels = 10 * c(1:9)) |> 
+      st_as_sf() |> 
+      st_set_crs(st_crs("EPSG:32614"))
+    contornos 
+  }, error = function(e) {
+    message("Error en accCost: Generando círculos concéntricos como respaldo.")
+    punto_proyectado = punto_referencia_fijo |> st_transform(st_crs("EPSG:32614"))
+    # Creamos una secuencia de radios
+    radios <- seq(100, 2500, by = 300)
+    circulos <- do.call(rbind, lapply(radios, function(r) {
+      st_buffer(punto_proyectado, dist = r) |> st_as_sf() |> 
+        dplyr::mutate(level = as.character(r / 30))
+    }))
+    return(circulos)
+  })
+  isocronas_niveles_fijos <- isocronas_niveles_fijos |> 
+    dplyr::arrange(dplyr::desc(level)) |> 
+    st_transform(st_crs("EPSG:4326"))
+  return(list("isocronas"=isocronas_niveles_fijos,"sf_datos_clues"=isocronas_niveles_fijos[1,] |> cbind(datos_del_clues |> st_drop_geometry()),centro=punto_referencia_fijo))
+  
+}
+
+
+##Legends: 
+addLegend_custom=function(proxy,legendCustom="clues"){
+  if(legendCustom=='clues'){
+    proxy_mod=proxy |> 
+      addLegend(
+        position = "bottomleft",
+        colors = unname(colores_markers),
+        labels = c("Primer Nivel", "Segundo Nivel", "Tercer Nivel"),
+        opacity = 1,
+        title = HTML("<div class='legend-title'>Nivel de Atención</div>"),
+        group = "CLUES",
+        layerId = "leyenda_clues"
+      )
+  }
+  else{
+    proxy_mod=proxy |>addLegend(
+      position = "bottomright",
+      pal = colorNumeric(palette = "Spectral", domain = c(10, 90)),
+      values = c(10, 20, 40, 60, 90),
+      title = "Accesibilidad",
+      opacity = 0.85,
+      #group = "Accesibilidad en minutos",
+      layerId = "Accesibilidad en minutos2",
+      labFormat = labelFormat(
+        suffix = " min.",
+        between = " a ",
+        transform = function(x) x
+      )
+    ) 
+  }
+  return(proxy_mod)
+}
+drawToSf=function(input){
+  data <- input # list
+  data <- jsonlite::toJSON(data, auto_unbox = TRUE) # string
+  data <- geojsonio::geojson_sf(data)
+  return(data)
+}
 ##################################################
 generadorPopUpContentDemog=function(poligono){
   return(
