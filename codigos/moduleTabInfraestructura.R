@@ -21,7 +21,7 @@ tabInfraUI <- function(id){
   )
 }
 
-tabInfraServer <- function(id, nivel_at,clues_en_operacion,sinerhias) {
+tabInfraServer <- function(id, nivel_at, selected_tab, clues_en_operacion, sinerhias) {
   moduleServer(
     id,
     function(input, output, session) {
@@ -53,6 +53,7 @@ tabInfraServer <- function(id, nivel_at,clues_en_operacion,sinerhias) {
         invisible(NULL)
       }
       equipamiento_opciones=reactive({
+        req(selected_tab() == "infra")
         #print(nivel_at())
         
         ##Determine which nivel column to filter on
@@ -101,6 +102,7 @@ tabInfraServer <- function(id, nivel_at,clues_en_operacion,sinerhias) {
       })
       ##Map update function
       update_mapa <- function() {
+        req(selected_tab() == "infra")
         #print("updated")
         ids <- equip_inputs()## puede tener la forma c("equip_1","equip_5","equip_7")
         #print(ids)
@@ -150,6 +152,7 @@ tabInfraServer <- function(id, nivel_at,clues_en_operacion,sinerhias) {
         }
       }   
       observeEvent(input$calcular_accesibilidad,{
+        req(selected_tab() == "infra")
         clues_con_equipam=clues_con_equipamiento()
         res_raster <- gdistance::accCost(T.GC, matrix(unlist(clues_con_equipam |> st_transform(32614) |> st_geometry()),nrow = nrow(clues_con_equipam),ncol = 2,byrow = T))
         crs(res_raster)=st_crs("EPSG:32614")$wkt
@@ -240,7 +243,7 @@ tabInfraServer <- function(id, nivel_at,clues_en_operacion,sinerhias) {
       skip_next_observer_update <- reactiveVal(FALSE)
       
       ##Observe nivel_at changes
-      observeEvent(nivel_at(), {
+      observeEvent(c(selected_tab(), nivel_at()), {
         last_selected_values(character(0))
         inputs_initialized(character(0))
         skip_next_observer_update(TRUE)  ## Flag to skip the next observer firing

@@ -42,11 +42,12 @@ tabStatsUI=function(id){
   ))
 }
 
-tabStatsServer <- function(id, nivel_at) {
+tabStatsServer <- function(id, nivel_at, selected_tab) {
   moduleServer(
     id,
     function(input, output, session) {
     listas_estadisticas <- reactive({
+      req(selected_tab() == "stats")
       req(input$sliderTiempo, nivel_at())
 
       estadisticas_dado_nivel_atencion_y_tiempo(

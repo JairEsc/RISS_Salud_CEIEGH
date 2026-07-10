@@ -158,6 +158,7 @@ ui <- dashboardPage(
 
 shinyApp(ui, function(input, output,session) {
   ###Lista de valores reactivos utilizables
+  selected_tab <- reactive(input$sidebarID)
   clues_solicitadosss=reactiveValues(df=NULL)
   memoriaPublicosPrivados=reactiveValues(
     nivel_at="SEGUNDO NIVEL",
@@ -185,9 +186,9 @@ shinyApp(ui, function(input, output,session) {
   
   input_nivel_at_d <- nivel_atencion_gatekeeper_inputs |> debounce(1000)
 
-  observeEvent(input_nivel_at_d(),
+  observeEvent(c(selected_tab(), input_nivel_at_d()),
     {
-      
+      req(selected_tab() == "map")
       req(memoriaPublicosPrivados$actualizar)
       tipo_filtro <- c()
       if(input_nivel_at_d()$publicos) tipo_filtro <- c(tipo_filtro, "Público")
@@ -229,8 +230,9 @@ shinyApp(ui, function(input, output,session) {
     input$agebs
   })
   input_checkbox_agebs_d=input_checkbox_agebs |> debounce(100)
-  observeEvent(input_checkbox_agebs_d(),##Esta función se aisló
+  observeEvent(c(selected_tab(), input_checkbox_agebs_d()),##Esta función se aisló
     {
+      req(selected_tab() == "map")
       print(input$sidebarID)
       if(input$agebs){
         leafletProxy("mapa_principal") |>
@@ -249,6 +251,7 @@ shinyApp(ui, function(input, output,session) {
   lista_objetos_especiales <- reactiveVal(value = 0)##Especiales son los que se dibujan. No necesito la lista, nomás saber si está vacía
   
   observeEvent(input$mapa_principal_marker_click,{# Click sobre un clues
+    req(selected_tab() == "map")
     
     isocronas_niveles_fijos=handleMarkerClick(df=clues_solicitadosss$df,input_click=input$mapa_principal_marker_click)
     
@@ -292,6 +295,7 @@ shinyApp(ui, function(input, output,session) {
   #   ##Clues cercanos (<58 min según coneval)
   #   
   observeEvent(input$mapa_principal_shape_click,{
+    req(selected_tab() == "map")
     ###Solamente si es click sobre un ageb. 
     if(!is.null(input$mapa_principal_shape_click$id)){
       if(grepl(pattern = "AGEB",x = input$mapa_principal_shape_click$id) ){
@@ -302,6 +306,7 @@ shinyApp(ui, function(input, output,session) {
 
   })
   observeEvent(input$mapa_principal_draw_new_feature,{
+    req(selected_tab() == "map")
     cat("\n\nNew Feature\n")
     data=drawToSf(input$mapa_principal_draw_new_feature)
     #sf
@@ -400,6 +405,7 @@ shinyApp(ui, function(input, output,session) {
   })
   ##Atemporales
   observeEvent(input$mapa_principal_draw_all_features,{
+    req(selected_tab() == "map")
     if(length(input$mapa_principal_draw_all_features$features) == 0){
       lista_objetos_especiales(0)
     } else {
@@ -414,8 +420,8 @@ shinyApp(ui, function(input, output,session) {
       shinyjs::runjs(code =funcionColorearBotonBorrar("add") )
     }
   })
-  tabStatsServer("tab_stats",nivel_at = reactive(input$nivel_at))##Ya la tenía "independiente", así que aproveché para consumirla como un módulo
-  tabInfraServer("tab_infra",nivel_at = reactive(input$nivel_at),clues_en_operacion=clues_en_operacion,sinerhias=sinerhias)##Ya la tenía "independiente", así que aproveché para consumirla como un módulo
+  tabStatsServer("tab_stats", nivel_at = reactive(input$nivel_at), selected_tab = reactive(input$sidebarID))
+  tabInfraServer("tab_infra", nivel_at = reactive(input$nivel_at), selected_tab = reactive(input$sidebarID), clues_en_operacion = clues_en_operacion, sinerhias = sinerhias)
 
 })
 
