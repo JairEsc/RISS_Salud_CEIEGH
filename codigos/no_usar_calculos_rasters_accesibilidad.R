@@ -2,74 +2,25 @@
 T.GC="inputs/accesibilidad_SIGEH/accesibilidad_carretera.rds" |> readRDS()
 
 #Tiempos máximos de 90 minutos para visualización. 
+niveles_atencion=c("",clues_en_operacion |> dplyr::pull(NIVEL.ATENCION)|> unique())
+sectores=c("",clues_en_operacion |> dplyr::pull(archivo_origen)|> unique())
+for(nivel in niveles_atencion){
+  for(sector in sectores){
+    clues_solicitados=clues_en_operacion |> dplyr::filter((NIVEL.ATENCION==nivel | nivel=='') & (archivo_origen==sector | sector=='') ) |> dplyr::select(geometry) |> dplyr::collect() |> 
+      dplyr::mutate(geometry= sf::st_as_sfc(structure(geometry,class = "WKB" ),EWKB=T)) |> st_as_sf()
+    print(paste0(nrow(clues_solicitados)," CLUES ", nivel, " ",sector))
+    if(nrow(clues_solicitados)>0){
+      tiempo_zona=gdistance::accCost(T.GC, matrix(unlist(clues_solicitados$geometry |> st_transform(32614)),nrow = nrow(clues_solicitados),ncol = 2,byrow = T))
+      crs(tiempo_zona)=st_crs("EPSG:32614")$wkt
+      tiempo_zona[ is.infinite(tiempo_zona)]=100
+      tiempo_zona[ tiempo_zona>=90]=NA
+      
+      tiempo_zona |> writeRaster(paste0("inputs/rasters/acces_",
+                                        gsub(pattern = " ",replacement = "_",nivel),"_",
+                                        gsub(pattern = "ú","u",x = sector),".tif"
+                                        ),overwrite=T)
+    }
+    
+  }
+}
 
-clues_solicitados=clues_en_operacion |> dplyr::filter(NIVEL.ATENCION=="PRIMER NIVEL") |> dplyr::select(geometry) |> dplyr::collect() |> 
-  dplyr::mutate(geometry= sf::st_as_sfc(structure(geometry,class = "WKB" ),EWKB=T)) |> st_as_sf()
-tiempo_zona=gdistance::accCost(T.GC, matrix(unlist(clues_solicitados$geometry |> st_transform(32614)),nrow = nrow(clues_solicitados),ncol = 2,byrow = T))
-crs(tiempo_zona)=st_crs("EPSG:32614")$wkt
-tiempo_zona[ is.infinite(tiempo_zona)]=100
-tiempo_zona[ tiempo_zona>=90]=NA
-tiempo_zona |> writeRaster("inputs/rasters/acces_CLUESN1_max90.tif",overwrite=T)
-#Tiempos máximos de 90 minutos para visualización. 
-
-clues_solicitados=clues_en_operacion |> dplyr::filter(NIVEL.ATENCION=="SEGUNDO NIVEL") |> dplyr::select(geometry) |> dplyr::collect() |> 
-  dplyr::mutate(geometry= sf::st_as_sfc(structure(geometry,class = "WKB" ),EWKB=T)) |> st_as_sf()
-tiempo_zona=gdistance::accCost(T.GC, matrix(unlist(clues_solicitados$geometry |> st_transform(32614)),nrow = nrow(clues_solicitados),ncol = 2,byrow = T))
-crs(tiempo_zona)=st_crs("EPSG:32614")$wkt
-tiempo_zona[ is.infinite(tiempo_zona)]=100
-tiempo_zona[ tiempo_zona>=90]=NA
-tiempo_zona |> writeRaster("inputs/rasters/acces_CLUESN2_max90.tif",overwrite=T)
-
-clues_solicitados=clues_en_operacion |> dplyr::select(geometry) |> dplyr::collect() |> 
-  dplyr::mutate(geometry= sf::st_as_sfc(structure(geometry,class = "WKB" ),EWKB=T)) |> st_as_sf()
-tiempo_zona=gdistance::accCost(T.GC, matrix(unlist(clues_solicitados$geometry |> st_transform(32614)),nrow = nrow(clues_solicitados),ncol = 2,byrow = T))
-crs(tiempo_zona)=st_crs("EPSG:32614")$wkt
-tiempo_zona[ is.infinite(tiempo_zona)]=100
-tiempo_zona[ tiempo_zona>=90]=NA
-tiempo_zona |> writeRaster("inputs/rasters/acces_CLUES_max90.tif",overwrite=T)
-
-clues_solicitados=clues_en_operacion |> dplyr::filter(NIVEL.ATENCION=="TERCER NIVEL") |> dplyr::select(geometry) |> dplyr::collect() |> 
-  dplyr::mutate(geometry= sf::st_as_sfc(structure(geometry,class = "WKB" ),EWKB=T)) |> st_as_sf()
-tiempo_zona=gdistance::accCost(T.GC, matrix(unlist(clues_solicitados$geometry |> st_transform(32614)),nrow = nrow(clues_solicitados),ncol = 2,byrow = T))
-crs(tiempo_zona)=st_crs("EPSG:32614")$wkt
-tiempo_zona[ is.infinite(tiempo_zona)]=100
-tiempo_zona[ tiempo_zona>=90]=NA
-tiempo_zona |> writeRaster("inputs/rasters/acces_CLUESN3_max90.tif",overwrite=T)
-
-#######Cambiamos modelo de accesibilidad:
-
-T.GC="inputs/accesibilidad_SIGEH/accesibilidad_peatonal.rds" |> readRDS()
-
-clues_solicitados=clues_en_operacion |> dplyr::filter(NIVEL.ATENCION=="PRIMER NIVEL") |> dplyr::select(geometry) |> dplyr::collect() |> 
-  dplyr::mutate(geometry= sf::st_as_sfc(structure(geometry,class = "WKB" ),EWKB=T))
-tiempo_zona=gdistance::accCost(T.GC, matrix(unlist(clues_solicitados$geometry |> st_transform(32614)),nrow = nrow(clues_solicitados),ncol = 2,byrow = T))
-crs(tiempo_zona)=st_crs("EPSG:32614")$wkt
-tiempo_zona[ is.infinite(tiempo_zona)]=100
-tiempo_zona[ tiempo_zona>=90]=NA
-plot(tiempo_zona)
-tiempo_zona |> writeRaster("inputs/rasters/acces_peatonal_CLUESN1_max90.tif",overwrite=T)
-#Tiempos máximos de 90 minutos para visualización. 
-
-clues_solicitados=clues_en_operacion |> dplyr::filter(NIVEL.ATENCION=="SEGUNDO NIVEL") |> dplyr::select(geometry) |> dplyr::collect() |> 
-  dplyr::mutate(geometry= sf::st_as_sfc(structure(geometry,class = "WKB" ),EWKB=T))
-tiempo_zona=gdistance::accCost(T.GC, matrix(unlist(clues_solicitados$geometry |> st_transform(32614)),nrow = nrow(clues_solicitados),ncol = 2,byrow = T))
-crs(tiempo_zona)=st_crs("EPSG:32614")$wkt
-tiempo_zona[ is.infinite(tiempo_zona)]=100
-tiempo_zona[ tiempo_zona>=90]=NA
-tiempo_zona |> writeRaster("inputs/rasters/acces_peatonal_CLUESN2_max90.tif",overwrite=T)
-
-clues_solicitados=clues_en_operacion |> dplyr::select(geometry) |> dplyr::collect() |> 
-  dplyr::mutate(geometry= sf::st_as_sfc(structure(geometry,class = "WKB" ),EWKB=T))
-tiempo_zona=gdistance::accCost(T.GC, matrix(unlist(clues_solicitados$geometry |> st_transform(32614)),nrow = nrow(clues_solicitados),ncol = 2,byrow = T))
-crs(tiempo_zona)=st_crs("EPSG:32614")$wkt
-tiempo_zona[ is.infinite(tiempo_zona)]=100
-tiempo_zona[ tiempo_zona>=90]=NA
-tiempo_zona |> writeRaster("inputs/rasters/acces_peatonal_CLUES_max90.tif",overwrite=T)
-
-clues_solicitados=clues_en_operacion |> dplyr::filter(NIVEL.ATENCION=="TERCER NIVEL") |> dplyr::select(geometry) |> dplyr::collect() |> 
-  dplyr::mutate(geometry= sf::st_as_sfc(structure(geometry,class = "WKB" ),EWKB=T))
-tiempo_zona=gdistance::accCost(T.GC, matrix(unlist(clues_solicitados$geometry |> st_transform(32614)),nrow = nrow(clues_solicitados),ncol = 2,byrow = T))
-crs(tiempo_zona)=st_crs("EPSG:32614")$wkt
-tiempo_zona[ is.infinite(tiempo_zona)]=100
-tiempo_zona[ tiempo_zona>=90]=NA
-tiempo_zona |> writeRaster("inputs/rasters/acces_peatonal_CLUESN3_max90.tif",overwrite=T)

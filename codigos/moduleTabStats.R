@@ -47,7 +47,7 @@ tabStatsServer <- function(id, nivel_at) {
     id,
     function(input, output, session) {
     listas_estadisticas <- reactive({
-      req(input$sliderTiempo, nivel_at()) 
+      req(input$sliderTiempo, nivel_at())
 
       estadisticas_dado_nivel_atencion_y_tiempo(
         nivel = nivel_at(), 
@@ -214,23 +214,7 @@ tabStatsServer <- function(id, nivel_at) {
                     label = ~paste0("CVEGEO: ", capa_sf$CVEGEO, " (", capa_sf$POB_rel, "%)"),
                     popup = listas_estadisticas()[[4]]
         ) |> 
-        # addLegend(
-        #   position = "bottomright",
-        #   pal = pal,
-        #   values = seq.int(0, 
-        #              max(c(0,max(listas_estadisticas()[[1]]$POB_rel))
-        #              ),length.out = 5),
-        #   title = "Población por localidad",
-        #   opacity = 0.85,
-        #   #group = "Accesibilidad en minutos",
-        #   layerId = "legend_agebs_tabStats",
-        #   labFormat = labelFormat(
-        #     suffix = " %",
-        #     between = "  ",
-        #     transform = function(x) x
-        #   )
-        # ) |> 
-        addLegendNumeric( pal = pal , 
+        addLegendNumeric(pal = pal , 
                           values = seq(0,max(c(0,max(listas_estadisticas()[[1]]$POB_rel))
                           ),0.1), position='bottomright',
                           title = '% pob por localidad', orientation = 'horizontal', 

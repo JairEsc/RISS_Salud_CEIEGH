@@ -118,6 +118,20 @@ body {
     border-color: #096657;
     color:#ffffff;
 }
+
+.sweet-alert .sa-button-container .confirm,
+.sweet-alert button.confirm {
+    background-color: #006657 !important;
+    border-color: #006657 !important;
+    color: #ffffff !important;
+}
+
+.sweet-alert .sa-button-container .confirm:hover,
+.sweet-alert button.confirm:hover {
+    background-color: #005245 !important;
+    border-color: #005245 !important;
+}
+
 #filtrarPublicoPrivado{
   height: fit-content;
 }

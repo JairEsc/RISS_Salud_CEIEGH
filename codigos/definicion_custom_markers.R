@@ -24,12 +24,18 @@ addMarkers_custom = function(proxy, data,addSearch=T) {
       } else {
         return 70;
       }
-    }"}
+  }"}
+  if("NOMBRE.DE.LA.UNIDAD"%in%colnames(data)){
+    labels=paste0(data$CLUES,"-",data$NOMBRE.DE.LA.UNIDAD)
+  }
+  else{
+    labels=data$CLUES
+  }
   proxy=proxy |> addMarkers(
     data = data,
     # Aquí mapeamos la columna NIVEL.ATENCION con nuestra lista de iconos
     icon = ~icons[NIVEL.ATENCION] ,
-    label =paste0(data$CLUES,"-",data$NOMBRE.DE.LA.UNIDAD) ,
+    label =labels ,
     group = "CLUES",clusterOptions = markerClusterOptions(removeOutsideVisibleBounds = T,
                                                           maxClusterRadius = 
                                                             htmlwidgets::JS(funcion_js

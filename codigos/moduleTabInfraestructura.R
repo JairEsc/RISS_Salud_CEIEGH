@@ -35,15 +35,7 @@ tabInfraServer <- function(id, nivel_at,clues_en_operacion,sinerhias) {
       output$equipamiento <- renderLeaflet({
         leaflet() |> addTiles() |> 
           setView(lng = -98.83284,lat = 20.45979,zoom = 9) |> 
-          addLegend(
-            position = "bottomleft",
-            colors = unname(colores_markers),
-            labels = c("Primer Nivel", "Segundo Nivel", "Tercer Nivel"),
-            opacity = 1,
-            title = HTML("<div class='legend-title'>Nivel de Atención</div>"),
-            group = "CLUES",
-            layerId = "leyenda_clues"
-          )
+          addLegend_custom(legendCustom = "clues")
       })
 
       ## Helper: snapshot current input values into equip_defaults
@@ -164,20 +156,8 @@ tabInfraServer <- function(id, nivel_at,clues_en_operacion,sinerhias) {
         res_raster[res_raster>90]=NA
         ##Pendiente: Colores de markers dependiendo nivel de atencion. 
         leafletProxy("equipamiento")|> 
-          addRasterImage(projectRasterForLeaflet(res_raster,method = "ngb"),colors = "Spectral",group = "Accesibilidad peatonal (en minutos)")|> addLegend(
-            position = "bottomright",
-            pal = colorNumeric(palette = "Spectral", domain = c(10, 90)),
-            values = c(10, 20, 40, 60, 90),
-            title = "Accesibilidad",
-            opacity = 0.85,
-            layerId = "Accesibilidad en minutos2",
-            labFormat = labelFormat(
-              suffix = " min.",
-              between = " a ",
-              transform = function(x) x
-            )
-          ) 
-
+          addRasterImage(projectRasterForLeaflet(res_raster,method = "ngb"),colors = "Spectral",group = "Accesibilidad peatonal (en minutos)")|> 
+          addLegend_custom(legendCustom = "raster") 
       })
       observeEvent(input$add_equipamiento, {#Botoncito de agregar otro equipamiento
         ##Snapshot current inputs so we don't lose user selections when UI rebuilds

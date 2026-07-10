@@ -58,7 +58,7 @@ source("codigos/extras_css.R")
 local=DBI::dbConnect(RSQLite::SQLite(), "clues_demograficos_municipios_simple.sqlite")#Contiene CLUES, Municipios y AGEBS
 clues_en_operacion=dplyr::tbl(local,"clues_en_operacion")
 limites_municipales=sf::st_read(local,"limite_municipal")
-lista_rasters=list.files("inputs/rasters/",full.names = T) |> sort() |> lapply(raster::raster)
+lista_rasters=list.files("inputs/rasters/",full.names = T) |> lapply(raster::raster)
 ##Ya está aislada en supabase. Para leerla de texto a hexadecimal:
 #clues_en_operacion |> dplyr::select(CLUES,geometry) |> dplyr::collect() |> dplyr::mutate(geometry= sf::st_as_sfc(structure(geometry,class = "WKB" ),EWKB=T))
 #Usar .zip 
@@ -116,7 +116,7 @@ ui <- dashboardPage(
     shinyjs::useShinyjs(),
     
     tags$style(HTML(tour_button_css)),
-    sidebarMenu(
+    sidebarMenu(id='sidebarID',
       menuItem("Accesibilidad", tabName = "map", icon = icon("map-marked-alt")),
       introBox(id = "tour_step_3_agebs", data.step = 2, data.intro = "placeholder",
                checkboxInput(inputId = "agebs",label = "AGEBs y localidades rurales",value = F)
@@ -187,29 +187,33 @@ shinyApp(ui, function(input, output,session) {
 
   observeEvent(input_nivel_at_d(),
     {
+      
       req(memoriaPublicosPrivados$actualizar)
       tipo_filtro <- c()
       if(input_nivel_at_d()$publicos) tipo_filtro <- c(tipo_filtro, "Público")
       if(input_nivel_at_d()$privados) tipo_filtro <- c(tipo_filtro, "Privado")
       clues_solicitados=clues_en_operacion |> dplyr::filter(NIVEL.ATENCION==input$nivel_at | input$nivel_at=="CUALQUIER NIVEL" ) |> 
         dplyr::filter(archivo_origen%in%tipo_filtro) |> 
-        dplyr::select(CLUES,MUNICIPIO,LOCALIDAD,NOMBRE.DE.LA.UNIDAD,NIVEL.ATENCION,Conteo_N1_T10:SALUD10_T60,geometry) |>
+        dplyr::select(CLUES,MUNICIPIO,LOCALIDAD,NIVEL.ATENCION,Conteo_N1_T10:SALUD10_T60,geometry) |>
         dplyr::collect() |> 
         dplyr::mutate(geometry= sf::st_as_sfc(structure(geometry,class = "WKB" ),EWKB=T)) |> st_as_sf()
       clues_solicitadosss$df=clues_solicitados
+      elegirRaster=function(nivel_at,tipo_filtro){
+        if(length(tipo_filtro)==2){
+          query=""
+        }else{
+          query=paste0(tipo_filtro,collapse = "")
+        }
+        query=paste0("inputs/rasters/acces_",gsub("CUALQUIER_NIVEL","",gsub(pattern = " ",replacement = "_",nivel_at)),
+                     "_",gsub(pattern = "ú","u",x = query),".tif" )
+        return(query)
+      }
+      print("Raster a elegir:")
+      print(elegirRaster(input$nivel_at,tipo_filtro))
+      
       showNotification(paste0(nrow(clues_solicitados)," CLUES de ",stringr::str_to_lower(input$nivel_at)) )
-      tiempo_zona_auto=switch (input$nivel_at,
-                          "PRIMER NIVEL" = lista_rasters[[2]],
-                          "SEGUNDO NIVEL" = lista_rasters[[3]],
-                          "TERCER NIVEL" = lista_rasters[[4]],
-                          "CUALQUIER NIVEL" = lista_rasters[[1]]
-      )
-      tiempo_zona_peatonal=switch (input$nivel_at,
-                          "PRIMER NIVEL" = lista_rasters[[6]],
-                          "SEGUNDO NIVEL" = lista_rasters[[7]],
-                          "TERCER NIVEL" = lista_rasters[[8]],
-                          "CUALQUIER NIVEL" = lista_rasters[[5]]
-      )
+      tiempo_zona_auto=elegirRaster(input$nivel_at,tipo_filtro) |> raster::raster()
+      tiempo_zona_peatonal="inputs/rasters/acces_CLUES_max90.tif" |> raster::raster()
       iso1_sigeh=raster::rasterToContour(tiempo_zona_auto, levels = c(10,20,40,60,90))|> st_as_sf() |> st_set_crs(st_crs("EPSG:32614")) |>st_transform(st_crs("EPSG:4326"))
       leafletProxy("mapa_principal") |> ##Esta función se puede generalizar y aislar
         clearProxy(markers = T,images = T,group = "CLUES",shapes =paste0("Isocronas",1:nrow(iso1_sigeh)),controls = "Accesibilidad en minutos2" ) |> 
@@ -227,6 +231,7 @@ shinyApp(ui, function(input, output,session) {
   input_checkbox_agebs_d=input_checkbox_agebs |> debounce(100)
   observeEvent(input_checkbox_agebs_d(),##Esta función se aisló
     {
+      print(input$sidebarID)
       if(input$agebs){
         leafletProxy("mapa_principal") |>
           addPolygons(data=demograficos_scince,label = paste0(demograficos_scince$CVEGEO,"<br>",
@@ -412,6 +417,6 @@ shinyApp(ui, function(input, output,session) {
   tabStatsServer("tab_stats",nivel_at = reactive(input$nivel_at))##Ya la tenía "independiente", así que aproveché para consumirla como un módulo
   tabInfraServer("tab_infra",nivel_at = reactive(input$nivel_at),clues_en_operacion=clues_en_operacion,sinerhias=sinerhias)##Ya la tenía "independiente", así que aproveché para consumirla como un módulo
 
-  })
+})
 
 #shiny::runApp("app.R",host = "0.0.0.0", port = 80)
