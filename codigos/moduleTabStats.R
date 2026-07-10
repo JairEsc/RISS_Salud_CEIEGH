@@ -2,7 +2,7 @@ tabStatsUI=function(id){
   ns <- NS(id)
   tabItem(tabName = "stats",
           introBox(id = "tour_step_4_slider",data.step = 4,
-                   data.intro = "<b>Filtrar por Tiempo de Accesibilidad</b><br/>Usa este deslizador para seleccionar un tiempo en minutos. El sistema filtrará las localidades que quedan fuera de ese rango de tiempo, es decir, con un CLUES más lejos que el tiempo seleccionado.",
+                   data.intro = "",
             tags$style(HTML(sliderInputTiempoCss)),
             div(class = "slider-filter-container",
               sliderInput(ns("sliderTiempo"),width = '60%',min = 0,max = 180,value = 58,

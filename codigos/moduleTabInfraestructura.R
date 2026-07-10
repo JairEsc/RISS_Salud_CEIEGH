@@ -14,8 +14,10 @@ tabInfraUI <- function(id){
   ns <- NS(id)
   tabItem(
     tabName = "infra",
+    introBox(id = "tour_step_7_infra",data.step = 7,
+             data.intro = "",
     uiOutput(ns("frase")),
-    uiOutput(ns("equipamiento_list")),
+    uiOutput(ns("equipamiento_list"))),
     leafletOutput(ns("equipamiento"), height = "65vh"),
     shiny::actionButton(ns("calcular_accesibilidad"),label = "Calcular Accesibilidad")
   )
@@ -56,7 +58,7 @@ tabInfraServer <- function(id, nivel_at, selected_tab, clues_en_operacion, siner
         req(selected_tab() == "infra")
         #print(nivel_at())
         
-        ##Determine which nivel column to filter on
+        ##
         nivel_col <- switch(nivel_at(),
           "PRIMER NIVEL" = "primer_nivel",
           "SEGUNDO NIVEL" = "segundo_nivel",
@@ -75,7 +77,7 @@ tabInfraServer <- function(id, nivel_at, selected_tab, clues_en_operacion, siner
         ##Catalogo
         catalog <- dplyr::tbl(sinerhias, "catalogo") |>
           dplyr::select(NombreVar, Descripcion.de.la.variable, !!nivel_col) |>
-          dplyr::filter(!is.na(!!dplyr::sym(nivel_col))) |>
+          dplyr::filter((!!dplyr::sym(nivel_col))>0) |>
           dplyr::collect()
         
 
@@ -110,7 +112,8 @@ tabInfraServer <- function(id, nivel_at, selected_tab, clues_en_operacion, siner
           val <- input[[x]]
           if (is.null(val) || val == "") NA else val
         }))))
-        #print(selected) ##Estas son las opciones distintas de la consulta actual
+        cat("Estas son las opciones distintas de la consulta actual") ##
+        cat(selected) ##Estas son las opciones distintas de la consulta actual
 
         consulta_actual <- tryCatch({
           sinerhias_nivel_actual() |>

@@ -118,7 +118,10 @@ body {
     border-color: #096657;
     color:#ffffff;
 }
-
+#start_tour{
+  position: fixed;
+  bottom: 0;
+}
 .sweet-alert .sa-button-container .confirm,
 .sweet-alert button.confirm {
     background-color: #006657 !important;

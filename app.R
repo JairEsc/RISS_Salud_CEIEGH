@@ -124,7 +124,7 @@ ui <- dashboardPage(
       menuItem("Cobertura", tabName = "stats", icon = icon("chart-bar")),
       menuItem("Infraestructura", tabName = "infra", icon = icon("building")),
       div(style = "padding: 10px;",
-          actionButton("start_tour", "Explicación", class="btn-primary", width="100%",, icon = icon("question-circle"))
+          actionButton("start_tour", "Explicación", class="btn-primary", width="100%", icon = icon("question-circle"))
       )
       
     ),
@@ -165,7 +165,7 @@ shinyApp(ui, function(input, output,session) {
     publicos = TRUE, 
     privados = TRUE,
     modal_open = FALSE,
-    actualizar=TRUE
+    actualizar=FALSE
   )
   output$mapa_principal=renderLeaflet({
     #Mapa con tiles por defecto y barra de herramientas para dibujar polígonos
@@ -221,6 +221,7 @@ shinyApp(ui, function(input, output,session) {
       tiempo_zona_auto=elegirRaster(input$nivel_at,tipo_filtro) |> raster::raster()
       tiempo_zona_peatonal="inputs/rasters/acces_CLUES_max90.tif" |> raster::raster()
       iso1_sigeh=raster::rasterToContour(tiempo_zona_auto, levels = c(10,20,40,60,90))|> st_as_sf() |> st_set_crs(st_crs("EPSG:32614")) |>st_transform(st_crs("EPSG:4326"))
+      memoriaPublicosPrivados$actualizar=FALSE
       leafletProxy("mapa_principal") |> ##Esta función se puede generalizar y aislar
         clearProxy(markers = T,images = T,group = "CLUES",shapes =paste0("Isocronas",1:nrow(iso1_sigeh)),controls = "Accesibilidad en minutos2" ) |> 
         addMarkers_custom(data = clues_solicitados) |> 
@@ -379,18 +380,22 @@ shinyApp(ui, function(input, output,session) {
   # Tour Guide Implementation
   observeEvent(input$start_tour, {
     introjs(session, 
-            events = list(onbeforechange = I(paste0(
-              "if (targetElement.getAttribute('data-step') === '4' 
-              ||
-              targetElement.getAttribute('data-step') === '5' 
-              ||
-              targetElement.getAttribute('data-step') === '6' 
-              ) {",
-              "$(\"a[data-value='stats']\").trigger('click')",
-              "} else {",
-              "$(\"a[data-value='map']\").trigger('click')",
-              "}")
-            )),
+            events = list(
+              onbeforechange = I(
+                paste0(
+                  "
+      const step = targetElement.getAttribute('data-step');
+      if (step === '4' || step === '5' || step === '6') {
+        $('a[data-value=\"stats\"]').trigger('click');
+      } else if (step === '7') {
+        $('a[data-value=\"infra\"]').trigger('click');
+      } else {
+        $('a[data-value=\"map\"]').trigger('click');
+      }
+      "
+                )
+              )
+            ),
             
             options = list(
               steps = data.frame(
@@ -400,15 +405,17 @@ shinyApp(ui, function(input, output,session) {
                   "#tour_step_1_map",
                   "#tour_step_4_slider",
                   "#tour_step_5_download",
-                  "#tour_step_6_table"
+                  "#tour_step_6_table",
+                  "#tour_step_7_infra"
                 ),
                 intro = c(
-                  "<b>Seleccionar Nivel de Atención</b><br/>Elige entre 1er, 2do, 3er nivel o todos los niveles de CLUES para visualizar en el mapa. Esta elección define la accesibilidad en minutos de cada AGEB/localidad.",
+                  "<b>Seleccionar Nivel de Atención</b><br/>Elige entre 1er, 2do, 3er nivel o todos los niveles de CLUES para visualizar en el mapa. Esta elección define la accesibilidad en minutos de cada AGEB/localidad. <br/> <h3 style='color: #AE8E5D;'>Nuevo:</h3> Puedes filtrar por tipo de CLUES (Públicos y/o Privados) usando el botón de filtro.",
                   "<b>Agregar AGEBs y Localidades</b><br/>Activa esta opción para añadir datos demográficos de AGEBs y localidades al mapa. ",
                   "<b>Mapa Principal e Interactividad</b><br/> *: Puedes dar click en un CLUES para conocer información de accesibilidad (tiempo en minutos alrededor) y demográfica (población). <br> *: Da click a un polígono para concer la información de accesibilidad (Hospital más cercano y número de CLUES por tipo y rango de tiempo) y demográficas (Población total y afiliada a SS). <br> **: También puedes utilizar la herramienta de dibujo para seleccionar varios AGEBs y obtener un resumen. ",
                   "<b>Filtrar por Tiempo de Accesibilidad</b><br/>Usa este deslizador para seleccionar un tiempo en minutos. El sistema filtrará las localidades que tienen una accesibilidad en minutos mayor al valor seleccionado. El valor por defécto de 58 corresponde al indicador de accesibilidad de CONEVAL (2010) 'Tiempo promedio de traslado al hospital la última vez que se tuvo una emergencia'  ",
                   "<b>Descargar Datos</b><br/>Descarga los datos filtrados por tiempo en diferentes formatos (XLSX para municipios/localidades, GeoJSON para AGEBs).",
-                  "<b>Tabla de Desglose</b><br/>Visualiza los datos detallados por municipios, localidades o AGEBs. Los datos se actualizan automáticamente según el tiempo seleccionado."
+                  "<b>Tabla de Desglose</b><br/>Visualiza los datos detallados por municipios, localidades o AGEBs. Los datos se actualizan automáticamente según el tiempo seleccionado.",
+                  "<b>Explora la infraestructura de salud disponible para CLUES del sector Público. Agrega filtros según el catálogo de SINERHIAS para visualizar los CLUES que cumplen con las condiciones seleccionadas."
                 )
               )
             ))

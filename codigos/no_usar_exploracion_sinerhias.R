@@ -58,6 +58,7 @@ source("../../Reutilizables/Postgres_BUIG/conexion_local.R")
 local=DBI::dbConnect(RSQLite::SQLite(), "clues_demograficos_municipios.sqlite")
 sinerhias <- DBI::dbConnect(RSQLite::SQLite(), "outputs/confidenciales/clues_SINERHIAS_int.sqlite")
 clues_en_operacion=st_read(local,"clues_en_operacion")
+catalogo_sql=dplyr::tbl(sinerhias,"catalogo") |> dplyr::collect()
 ##Falta agregar datos calculados a los geojsons
 library(sf)
 
