@@ -109,7 +109,7 @@ ui <- dashboardPage(
                                   "3er nivel" = "TERCER NIVEL",
                                   "Todos los niveles"='CUALQUIER NIVEL'),
                       selectize = TRUE,selected ="SEGUNDO NIVEL" ),
-          actionButton("filtrarPublicoPrivado",class="btn-primary",icon = icon("filter"),label = "")
+          actionButton("filtrarPublicoPrivado",class="btn-primary",icon = icon("filter"),label = "", disabled = TRUE)
         )
         )
     ),
@@ -209,9 +209,14 @@ shinyApp(ui, function(input, output,session) {
                      "_",gsub(pattern = "ú","u",x = query),".tif" )
         return(query)
       }
-      print("Raster a elegir:")
-      print(elegirRaster(input$nivel_at,tipo_filtro))
-      
+      # print("Raster a elegir:")
+      # print(elegirRaster(input$nivel_at,tipo_filtro))
+      print(paste0(nrow(clues_solicitados)," CLUES de ",stringr::str_to_lower(input$nivel_at)) )
+      if(nrow(clues_solicitados)==0){
+        return(leafletProxy("mapa_principal") |> ##Esta función se puede generalizar y aislar
+               clearProxy(markers = T,images = T,group = "CLUES",shapes =paste0("Isocronas",1:5),controls = "Accesibilidad en minutos2" ) 
+        )
+      }
       showNotification(paste0(nrow(clues_solicitados)," CLUES de ",stringr::str_to_lower(input$nivel_at)) )
       tiempo_zona_auto=elegirRaster(input$nivel_at,tipo_filtro) |> raster::raster()
       tiempo_zona_peatonal="inputs/rasters/acces_CLUES_max90.tif" |> raster::raster()
@@ -333,6 +338,7 @@ shinyApp(ui, function(input, output,session) {
     AccesibilidadPoligono(data_c_geo)
   })
   observeEvent(input$filtrarPublicoPrivado,{
+    req(selected_tab() == "map")
     memoriaPublicosPrivados$modal_open <- TRUE
     shinyalert(
       html = TRUE,
@@ -366,6 +372,10 @@ shinyApp(ui, function(input, output,session) {
   })
   observeEvent(input$nivel_at,{memoriaPublicosPrivados$nivel_at=input$nivel_at
   memoriaPublicosPrivados$actualizar=TRUE})
+
+  observe({
+    shinyjs::toggleState("filtrarPublicoPrivado", condition = selected_tab() == "map")
+  })
   # Tour Guide Implementation
   observeEvent(input$start_tour, {
     introjs(session, 

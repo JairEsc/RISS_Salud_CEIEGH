@@ -223,7 +223,7 @@ estadisticas_dado_nivel_atencion_y_tiempo=function(nivel,tiempo){
   } else if(nivel%in%c('TERCER NIVEL',3)){
     lista_agebs=lista_agebs|> 
       dplyr::filter(tiempo_promedio_clues_N3_mas_cercano > tiempo)
-  } else{lista_agebs=lista_agebs|> 
+  } else{lista_agebs=lista_agebs|> ##Bonita aplicación de estadísticos de orden
     dplyr::filter((tiempo_promedio_clues_N1_mas_cercano > tiempo)& 
                     (tiempo_promedio_clues_N2_mas_cercano> tiempo) &
                     (tiempo_promedio_clues_N3_mas_cercano>tiempo))}
