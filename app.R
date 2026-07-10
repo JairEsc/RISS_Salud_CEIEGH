@@ -258,22 +258,46 @@ shinyApp(ui, function(input, output,session) {
   
   observeEvent(input$mapa_principal_marker_click,{# Click sobre un clues
     req(selected_tab() == "map")
-    
-    isocronas_niveles_fijos=handleMarkerClick(df=clues_solicitadosss$df,input_click=input$mapa_principal_marker_click)
-    
+    #print(clues_solicitadosss$df)
+    #print(input$mapa_principal_marker_click)
+    datos_del_clues=clues_solicitadosss$df |> ##Estamos conservando todas las columnas del CLUEs aunque no todas se muestran
+      dplyr::filter(dplyr::row_number() == as.numeric(gsub("CLUES","",input$mapa_principal_marker_click$id) )) ##Datos del clues seleccionado
+    punto_referencia_fijo=st_point(c(input$mapa_principal_marker_click$lng ,input$mapa_principal_marker_click$lat)) |> st_sfc(crs = 4326)
+    #print(punto_referencia_fijo)
+    isocronas_niveles_fijos <- tryCatch({
+      res_raster <- gdistance::accCost(T.GC, punto_referencia_fijo |> st_transform(st_crs("EPSG:32614")) |> unlist())
+      
+      contornos <- raster::rasterToContour(res_raster, levels = 10 * c(1:9)) |> 
+        st_as_sf() |> 
+        st_set_crs(st_crs("EPSG:32614"))
+      contornos 
+    }, error = function(e) {
+      message("Error en accCost: Generando círculos concéntricos como respaldo.")
+      punto_proyectado = punto_referencia_fijo |> st_transform(st_crs("EPSG:32614"))
+      # Creamos una secuencia de radios
+      radios <- seq(100, 2500, by = 300)
+      circulos <- do.call(rbind, lapply(radios, function(r) {
+        st_buffer(punto_proyectado, dist = r) |> st_as_sf() |> 
+          dplyr::mutate(level = as.character(r / 30))
+      }))
+      return(circulos)
+    })
+    isocronas_niveles_fijos <- isocronas_niveles_fijos |> 
+      dplyr::arrange(dplyr::desc(level)) |> 
+      st_transform(st_crs("EPSG:4326"))
     ##Lo agregamos al mapa principal
     leafletProxy("mapa_principal") |> 
       addPolygons(
-        data = isocronas_niveles_fijos[['isocronas']],
+        data = isocronas_niveles_fijos,
         group = "especiales",
-        color = paleta_spectral_comun(as.numeric(isocronas_niveles_fijos[['isocronas']]$level)),
+        color = paleta_spectral_comun(as.numeric(isocronas_niveles_fijos$level)),
         opacity = 1,
-        fillColor = paleta_spectral_comun(as.numeric(isocronas_niveles_fijos[['isocronas']]$level)),
+        fillColor = paleta_spectral_comun(as.numeric(isocronas_niveles_fijos$level)),
         fillOpacity = 0.7
       )
     ##Cuando se agregue una capa de dibujo se prende el botoncito para borrar. Cuando se limpie todo, se descolorea. 
     lista_objetos_especiales(1)
-    AccesibilidadCLUES(poligono =isocronas_niveles_fijos[['sf_datos_clues']] )##Agrega el pop-up con datos demograficos
+    AccesibilidadCLUES(poligono =isocronas_niveles_fijos[1,] |> cbind(datos_del_clues |> st_drop_geometry()) ,centro=punto_referencia_fijo)##Agrega el pop-up con datos demograficos
   })
   
   observe({##Agregar el legend cuando estemos viendo "Cualquier nivel'. Por eso usamos 

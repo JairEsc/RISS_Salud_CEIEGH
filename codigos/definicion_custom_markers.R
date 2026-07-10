@@ -8,7 +8,7 @@ colores_markers <- c(
   "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-violet.png" = "#AF7AC5", # Violeta (Segundo Nivel)
   "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png"    = "#E74C3C"  # Rojo (Tercer Nivel)
 )
-addMarkers_custom = function(proxy, data,addSearch=T) {
+addMarkers_custom = function(proxy, data,addSearch=T,popups=NULL) {
   if("PRIMER NIVEL"%in% unique(data$NIVEL.ATENCION)){
     funcion_js="function (mapZoom) {
       if (mapZoom > 12) {
@@ -35,11 +35,11 @@ addMarkers_custom = function(proxy, data,addSearch=T) {
     data = data,
     # Aquí mapeamos la columna NIVEL.ATENCION con nuestra lista de iconos
     icon = ~icons[NIVEL.ATENCION] ,
-    label =labels ,
+    label =labels ,popup =  popups,
     group = "CLUES",clusterOptions = markerClusterOptions(removeOutsideVisibleBounds = T,
                                                           maxClusterRadius = 
                                                             htmlwidgets::JS(funcion_js
-                                                            )
+                                                            ),showCoverageOnHover = T,spiderfyOnMaxZoom = T
     ), 
     layerId = paste0('CLUES',1:nrow(data))
   )

@@ -118,7 +118,7 @@ tabInfraServer <- function(id, nivel_at, selected_tab, clues_en_operacion, siner
         consulta_actual <- tryCatch({
           sinerhias_nivel_actual() |>
             dplyr::filter(dplyr::if_all(dplyr::all_of(selected), ~ . == 1)) |>
-            dplyr::select(CLUES,NIVEL.ATENCION,geometry) |>
+            dplyr::select(CLUES,NIVEL.ATENCION,NOMBRE.DE.LA.INSTITUCION,MUNICIPIO,LOCALIDAD,NOMBRE.DE.LA.UNIDAD,geometry) |>
             dplyr::collect()
         }, error = function(e) {
           return(NULL)
@@ -143,15 +143,11 @@ tabInfraServer <- function(id, nivel_at, selected_tab, clues_en_operacion, siner
           
         
         if(nrow(clues_con_equipam)>0){##Solo actualizmos si hay clues con el equipamiento descrito
-          #res_raster <- gdistance::accCost(T.GC, matrix(unlist(clues_con_equipam |> st_transform(32614) |> st_geometry()),nrow = nrow(clues_con_equipam),ncol = 2,byrow = T))
-          #crs(res_raster)=st_crs("EPSG:32614")$wkt
-          #res_raster[res_raster>90]=NA
-          ##Pendiente: Colores de markers dependiendo nivel de atencion. 
           leafletProxy("equipamiento")|> 
-            #addRasterImage(projectRasterForLeaflet(res_raster,method = "ngb"),colors = "Spectral",group = "Accesibilidad peatonal (en minutos)")|>
-            # addMarkers(data=clues_con_equipam,layerId = clues_con_equipam$CLUES,
-            #            label=clues_con_equipam$CLUES,popup = clues_con_equipam$NOMBRE.DE.LA.INSTITUCION)
-            addMarkers_custom(data =clues_con_equipam,addSearch = F )
+            addMarkers_custom(data =clues_con_equipam,addSearch = F ,popups=paste0(clues_con_equipam$CLUES,"-",
+                                                                                   clues_con_equipam$NIVEL.ATENCION,"-",
+                                                                                   clues_con_equipam$NOMBRE.DE.LA.INSTITUCION
+                                                                                   ))
         }
       }   
       observeEvent(input$calcular_accesibilidad,{
@@ -166,7 +162,6 @@ tabInfraServer <- function(id, nivel_at, selected_tab, clues_en_operacion, siner
           addLegend_custom(legendCustom = "raster") 
       })
       observeEvent(input$add_equipamiento, {#Botoncito de agregar otro equipamiento
-        ##Snapshot current inputs so we don't lose user selections when UI rebuilds
         snapshot_current_inputs()
         prev_ids <- equip_inputs()
         prev_id <- if (length(prev_ids) > 0) prev_ids[length(prev_ids)] else NULL
@@ -220,8 +215,7 @@ tabInfraServer <- function(id, nivel_at, selected_tab, clues_en_operacion, siner
         ids <- equip_inputs()
         if (length(ids) == 0) return(NULL)##Esto nunca debería ocurrir
         choices_available <- equipamiento_opciones()[['catalogo']]
-        #print("choices_available")
-        #print(choices_available)##Las variables disponibles
+
         tagList(
           lapply(seq_along(ids), function(i) {##Este es tal cual lo que se hace en update map
             id <- ids[i]

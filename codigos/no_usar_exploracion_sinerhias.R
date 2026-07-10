@@ -25,7 +25,7 @@ capacidad_instalada_N1_tidy=capacidad_instalada_N1 |>
   tidyr::pivot_longer(cols = HGDIF000043:HGPMX000035,names_to = "CLUES") |> 
   tidyr::pivot_wider(names_from = c(NombreVar),values_from = c(value))|> 
   dplyr::mutate(across(where(is.numeric), as.integer))|> 
-  merge(clues_en_operacion |> dplyr::select(CLUES,geometry),by='CLUES',all.x=T) |> 
+  merge(clues_en_operacion |> dplyr::select(CLUES,NOMBRE.DE.LA.INSTITUCION,MUNICIPIO,LOCALIDAD,NOMBRE.DE.LA.UNIDAD,geometry),by='CLUES',all.x=T) |> 
   dplyr::filter(!is.na(geometry))
 capacidad_instalada_N2=capacidad_instalada[[2]]
 capacidad_instalada_N2_tidy=capacidad_instalada_N2 |> 
@@ -33,7 +33,7 @@ capacidad_instalada_N2_tidy=capacidad_instalada_N2 |>
   dplyr::group_by(NombreVar)|> tidyr::pivot_longer(cols = HGIMB000151:HGPMX000016,names_to = "CLUES") |> 
   tidyr::pivot_wider(names_from = c(NombreVar),values_from = c(value))|> 
   dplyr::mutate(across(where(is.numeric), as.integer))|> 
-  merge(clues_en_operacion |> dplyr::select(CLUES,geometry),by='CLUES',all.x=T) |> 
+  merge(clues_en_operacion |> dplyr::select(CLUES,NOMBRE.DE.LA.INSTITUCION,MUNICIPIO,LOCALIDAD,NOMBRE.DE.LA.UNIDAD,geometry),by='CLUES',all.x=T) |> 
   dplyr::filter(!is.na(geometry))
 
 capacidad_instalada_N3=capacidad_instalada[[3]]
@@ -42,7 +42,7 @@ capacidad_instalada_N3_tidy=capacidad_instalada_N3 |>
   dplyr::group_by(NombreVar)|> tidyr::pivot_longer(cols = HGDIF000014:HGIMB002304,names_to = "CLUES") |> 
   tidyr::pivot_wider(names_from = c(NombreVar),values_from = c(value))|> 
   dplyr::mutate(across(where(is.numeric), as.integer))|> 
-  merge(clues_en_operacion |> dplyr::select(CLUES,geometry),by='CLUES',all.x=T) |> 
+  merge(clues_en_operacion |> dplyr::select(CLUES,NOMBRE.DE.LA.INSTITUCION,MUNICIPIO,LOCALIDAD,NOMBRE.DE.LA.UNIDAD,geometry),by='CLUES',all.x=T) |> 
   dplyr::filter(!is.na(geometry))
 
 ####faltantes
@@ -57,7 +57,7 @@ ncol(capacidad_instalada_N3[,4:ncol(capacidad_instalada_N3)])-
 source("../../Reutilizables/Postgres_BUIG/conexion_local.R")
 local=DBI::dbConnect(RSQLite::SQLite(), "clues_demograficos_municipios.sqlite")
 sinerhias <- DBI::dbConnect(RSQLite::SQLite(), "outputs/confidenciales/clues_SINERHIAS_int.sqlite")
-clues_en_operacion=st_read(local,"clues_en_operacion")
+#clues_en_operacion=st_read(local,"clues_en_operacion")
 catalogo_sql=dplyr::tbl(sinerhias,"catalogo") |> dplyr::collect()
 ##Falta agregar datos calculados a los geojsons
 library(sf)
@@ -81,7 +81,8 @@ capacidades_instaladas_tidy=capacidades_instaladas |>
   tidyr::pivot_wider(names_from = c(NombreVar),values_from = c(value))
 capacidades_instaladas_tidy=capacidades_instaladas_tidy |> 
   dplyr::mutate(dplyr::across(where(is.numeric),~tidyr::replace_na(., 0))) |> 
-  dplyr::mutate(dplyr::across(where(is.numeric), as.integer))|> merge(clues_en_operacion |> dplyr::select(CLUES,geometry),by='CLUES',all.x=T) |> 
+  dplyr::mutate(dplyr::across(where(is.numeric), as.integer))|> merge(clues_en_operacion |> 
+                                                                        dplyr::select(CLUES,NOMBRE.DE.LA.INSTITUCION,MUNICIPIO,LOCALIDAD,NOMBRE.DE.LA.UNIDAD,geometry),by='CLUES',all.x=T) |> 
   dplyr::filter(!is.na(geometry))
 capacidades_instaladas_tidy=capacidades_instaladas_tidy |> 
   dplyr::rowwise() |> 
