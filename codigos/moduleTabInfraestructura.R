@@ -76,9 +76,10 @@ tabInfraServer <- function(id, nivel_at, selected_tab, clues_en_operacion, siner
         
         ##Catalogo
         catalog <- dplyr::tbl(sinerhias, "catalogo") |>
-          dplyr::select(NombreVar, Descripcion.de.la.variable, !!nivel_col) |>
+          dplyr::select(NombreVar, Descripcion.de.la.variable, !!nivel_col,!!paste0("disponibilidad_",nivel_col)) |>
           dplyr::filter((!!dplyr::sym(nivel_col))>0) |>
-          dplyr::collect()
+          dplyr::collect() |> 
+          dplyr::arrange(dplyr::desc(!!dplyr::sym(paste0("disponibilidad_",nivel_col) )))
         
 
         lista_opciones <- list()
@@ -87,6 +88,7 @@ tabInfraServer <- function(id, nivel_at, selected_tab, clues_en_operacion, siner
           catalog$NombreVar,
           catalog$Descripcion.de.la.variable
         )
+        print(lista_opciones[['catalogo']])
         ##conexion a la tabla de clues
         lista_opciones[['tabla']] <- dplyr::tbl(sinerhias, paste0(nivel_atencion, "CLUES_SINERHIAS"))
         
@@ -144,15 +146,25 @@ tabInfraServer <- function(id, nivel_at, selected_tab, clues_en_operacion, siner
         
         if(nrow(clues_con_equipam)>0){##Solo actualizmos si hay clues con el equipamiento descrito
           leafletProxy("equipamiento")|> 
-            addMarkers_custom(data =clues_con_equipam,addSearch = F ,popups=paste0(clues_con_equipam$CLUES,"-",
-                                                                                   clues_con_equipam$NIVEL.ATENCION,"-",
-                                                                                   clues_con_equipam$NOMBRE.DE.LA.INSTITUCION
-                                                                                   ))
+            addMarkers_custom(data =clues_con_equipam,addSearch = F ,
+                              popups=paste0(
+                                clues_con_equipam$CLUES,"-",
+                                clues_con_equipam$MUNICIPIO,"-",
+                                clues_con_equipam$LOCALIDAD,"-",
+                                clues_con_equipam$NIVEL.ATENCION,"-",
+                                clues_con_equipam$NOMBRE.DE.LA.INSTITUCION,"-",
+                                clues_con_equipam$NOMBRE.DE.LA.UNIDAD
+                                            )
+                              )
         }
       }   
       observeEvent(input$calcular_accesibilidad,{
         req(selected_tab() == "infra")
         clues_con_equipam=clues_con_equipamiento()
+        if(nrow(clues_con_equipam)==0){
+          showNotification(paste0(nrow(clues_solicitados)," CLUES cuentan con este equipamiento"))
+        }
+        req(nrow(clues_con_equipam)>0)
         res_raster <- gdistance::accCost(T.GC, matrix(unlist(clues_con_equipam |> st_transform(32614) |> st_geometry()),nrow = nrow(clues_con_equipam),ncol = 2,byrow = T))
         crs(res_raster)=st_crs("EPSG:32614")$wkt
         res_raster[res_raster>90]=NA
@@ -215,7 +227,7 @@ tabInfraServer <- function(id, nivel_at, selected_tab, clues_en_operacion, siner
         ids <- equip_inputs()
         if (length(ids) == 0) return(NULL)##Esto nunca debería ocurrir
         choices_available <- equipamiento_opciones()[['catalogo']]
-
+        
         tagList(
           lapply(seq_along(ids), function(i) {##Este es tal cual lo que se hace en update map
             id <- ids[i]

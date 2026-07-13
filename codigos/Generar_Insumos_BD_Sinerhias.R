@@ -103,6 +103,26 @@ catalogo=catalogo |>
   dplyr::mutate(cualquier_nivel=ifelse(sum(c(primer_nivel,segundo_nivel,tercer_nivel),na.rm=T)>0,1,0))#####Pendiente 
 catalogo=catalogo|> dplyr::mutate(across(where(is.numeric), as.integer)) |> 
   dplyr::mutate(dplyr::across(where(is.numeric),~tidyr::replace_na(., 0)))
+
+c("N1_CLUES_SINERHIAS" ,"N2_CLUES_SINERHIAS","N3_CLUES_SINERHIAS") |> lapply(\(nivel){
+  purrr::map2(catalogo$NombreVar, rep(nivel,184), 
+              \(nombreVar,nivel){
+                totales=dplyr::tbl(sinerhias,nivel) |> dplyr::collect()
+                if(!nombreVar%in% colnames(totales)){
+                  return(NA)
+                }
+                disponibles= totales |> 
+                  dplyr::filter(!!dplyr::sym(nombreVar)>0 ) |> nrow()
+                return(disponibles)
+              })             
+})->z
+z |> lapply(unlist)->zzz
+
+catalogo=catalogo |> cbind(disponibilidad_primer_nivel=zzz[[1]])
+catalogo=catalogo |> cbind(disponibilidad_segundo_nivel=zzz[[2]])
+catalogo=catalogo |> cbind(disponibilidad_tercer_nivel=zzz[[3]])
+catalogo$disponibilidad_cualquier_nivel=catalogo |> dplyr::select(disponibilidad_primer_nivel:disponibilidad_tercer_nivel) |> rowSums(na.rm = T)
+
 st_write(catalogo, sinerhias, "catalogo", delete_layer = T,append=F)
 DBI::dbDisconnect(sinerhias)
 library(leaflet)
@@ -125,4 +145,5 @@ generarMapaWeb = function(nivel_de_atencion = 'N1_', variable1) {
     addRasterImage(projectRasterForLeaflet(tiempo_zona,method = "ngb"),colors = "Spectral",group = "Accesibilidad carretera (en minutos)") 
 }
 generarMapaWeb("N2",variable1 = "expedienteclinico")
+
 

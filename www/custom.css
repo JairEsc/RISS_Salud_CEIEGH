@@ -157,6 +157,8 @@ body {
     background-color: #ffffff;
     box-shadow: 0 6px 18px rgba(2, 6, 23, 0.04);
     display: flex;
+    min-width: 33%;
+    max-width: 49%;
 }
 .form-group{
   margin-bottom:1px!important;

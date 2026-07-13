@@ -156,6 +156,18 @@ generadorPopUpContentCLUES=function(poligono){
     )
   )
 }
+generadorPopUpContentCLUESInfra=function(clues){
+  return(
+    paste0(
+      clues_con_equipam$CLUES,"-",
+      clues_con_equipam$MUNICIPIO,"-",
+      clues_con_equipam$LOCALIDAD,"-",
+      clues_con_equipam$NIVEL.ATENCION,"-",
+      clues_con_equipam$NOMBRE.DE.LA.INSTITUCION,"-",
+      clues_con_equipam$NOMBRE.DE.LA.UNIDAD
+    )
+  )
+}
 
 #Cuando la información censal esn confidencial (-6 o -8), modificar el formato para reflejarlo
 AccesibilidadPoligono=function(poligono,leaflet_proxy='mapa_principal'){

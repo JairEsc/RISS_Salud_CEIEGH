@@ -199,14 +199,19 @@ shinyApp(ui, function(input, output,session) {
         dplyr::collect() |> 
         dplyr::mutate(geometry= sf::st_as_sfc(structure(geometry,class = "WKB" ),EWKB=T)) |> st_as_sf()
       clues_solicitadosss$df=clues_solicitados
-      elegirRaster=function(nivel_at,tipo_filtro){
+      elegirRaster=function(nivel_at,tipo_filtro,peatonal=F){
+        peat=''
+        if(peatonal){
+          peat="_peaton"
+        }
+        
         if(length(tipo_filtro)==2){
           query=""
         }else{
           query=paste0(tipo_filtro,collapse = "")
         }
         query=paste0("inputs/rasters/acces_",gsub("CUALQUIER_NIVEL","",gsub(pattern = " ",replacement = "_",nivel_at)),
-                     "_",gsub(pattern = "ú","u",x = query),".tif" )
+                     "_",gsub(pattern = "ú","u",x = query),peat,".tif" )
         return(query)
       }
       # print("Raster a elegir:")
@@ -219,7 +224,7 @@ shinyApp(ui, function(input, output,session) {
       }
       showNotification(paste0(nrow(clues_solicitados)," CLUES de ",stringr::str_to_lower(input$nivel_at)) )
       tiempo_zona_auto=elegirRaster(input$nivel_at,tipo_filtro) |> raster::raster()
-      tiempo_zona_peatonal="inputs/rasters/acces_CLUES_max90.tif" |> raster::raster()
+      tiempo_zona_peatonal=elegirRaster(input$nivel_at,tipo_filtro,peatonal = T) |> raster::raster()
       iso1_sigeh=raster::rasterToContour(tiempo_zona_auto, levels = c(10,20,40,60,90))|> st_as_sf() |> st_set_crs(st_crs("EPSG:32614")) |>st_transform(st_crs("EPSG:4326"))
       memoriaPublicosPrivados$actualizar=FALSE
       leafletProxy("mapa_principal") |> ##Esta función se puede generalizar y aislar
