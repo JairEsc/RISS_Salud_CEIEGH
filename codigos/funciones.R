@@ -156,15 +156,29 @@ generadorPopUpContentCLUES=function(poligono){
     )
   )
 }
-generadorPopUpContentCLUESInfra=function(clues){
+generadorPopUpContentCLUESInfra=function(clues,opciones_catalogo){
   return(
     paste0(
-      clues_con_equipam$CLUES,"-",
-      clues_con_equipam$MUNICIPIO,"-",
-      clues_con_equipam$LOCALIDAD,"-",
-      clues_con_equipam$NIVEL.ATENCION,"-",
-      clues_con_equipam$NOMBRE.DE.LA.INSTITUCION,"-",
-      clues_con_equipam$NOMBRE.DE.LA.UNIDAD
+      "<div style='text-align: center; font-family: Arial, sans-serif; padding: 15px; background-color: #f9f9f9; border-radius: 8px;'>",
+      "<h3 style='margin: 0 0 10px 0; color: #333; font-size: 16px;'>",
+      clues$NOMBRE.DE.LA.UNIDAD,
+      "</h3>",
+      "<p style='margin: 5px 0; font-size: 13px;'>",
+      "<strong>Institución: </strong>",
+      "<span style='opacity: 0.7;'>", clues$NOMBRE.DE.LA.INSTITUCION, "</span>",
+      "</p>",
+      "<p style='margin: 5px 0; font-size: 12px; color: #555;'>",
+      clues$MUNICIPIO, " - ", clues$LOCALIDAD,
+      "</p>",
+      "<p style='margin: 10px 0 0 0; font-size: 14px; color: #d4af37; font-weight: bold;'>",
+      "CLUES: ", clues$CLUES,
+      "</p>",
+      "<p style='margin: 2px 0 0 0; font-size: 12px; color: #621132;'>",
+      "De los ",opciones_catalogo, " equipamientos disponibles para este nivel de atención,"," este CLUES cuenta con ", 
+      round(clues$equipamiento*opciones_catalogo,0)," (",100*clues$equipamiento,"%)",
+      "</p>",
+
+      "</div>"
     )
   )
 }

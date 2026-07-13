@@ -120,7 +120,7 @@ tabInfraServer <- function(id, nivel_at, selected_tab, clues_en_operacion, siner
         consulta_actual <- tryCatch({
           sinerhias_nivel_actual() |>
             dplyr::filter(dplyr::if_all(dplyr::all_of(selected), ~ . == 1)) |>
-            dplyr::select(CLUES,NIVEL.ATENCION,NOMBRE.DE.LA.INSTITUCION,MUNICIPIO,LOCALIDAD,NOMBRE.DE.LA.UNIDAD,geometry) |>
+            dplyr::select(CLUES,NIVEL.ATENCION,NOMBRE.DE.LA.INSTITUCION,MUNICIPIO,LOCALIDAD,NOMBRE.DE.LA.UNIDAD,equipamiento,geometry) |>
             dplyr::collect()
         }, error = function(e) {
           return(NULL)
@@ -145,16 +145,12 @@ tabInfraServer <- function(id, nivel_at, selected_tab, clues_en_operacion, siner
           
         
         if(nrow(clues_con_equipam)>0){##Solo actualizmos si hay clues con el equipamiento descrito
+          popups_list <- apply(clues_con_equipam, 1, function(row) {
+            generadorPopUpContentCLUESInfra(as.list(row),opciones_catalogo=length(equipamiento_opciones()[['catalogo']]) )
+          })
           leafletProxy("equipamiento")|> 
             addMarkers_custom(data =clues_con_equipam,addSearch = F ,
-                              popups=paste0(
-                                clues_con_equipam$CLUES,"-",
-                                clues_con_equipam$MUNICIPIO,"-",
-                                clues_con_equipam$LOCALIDAD,"-",
-                                clues_con_equipam$NIVEL.ATENCION,"-",
-                                clues_con_equipam$NOMBRE.DE.LA.INSTITUCION,"-",
-                                clues_con_equipam$NOMBRE.DE.LA.UNIDAD
-                                            )
+                              popups=popups_list
                               )
         }
       }   
