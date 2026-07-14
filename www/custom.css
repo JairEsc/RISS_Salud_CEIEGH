@@ -119,8 +119,9 @@ body {
     color:#ffffff;
 }
 #start_tour{
-  position: fixed;
+  position: absolute;
   bottom: 0;
+  padding: 10px 0px;
 }
 .sweet-alert .sa-button-container .confirm,
 .sweet-alert button.confirm {

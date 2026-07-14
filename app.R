@@ -46,9 +46,11 @@ library(raster)
 library(shinydashboard)
 library(shinydashboardPlus)
 library(DT)
-library(rintrojs)
 library(dbplyr)
+library(DBI)
+library(RSQLite)
 library(archive)
+library(rintrojs)
 library(shinyalert)
 
 source("codigos/SIGEH_isochrone.R")
@@ -62,12 +64,12 @@ lista_rasters=list.files("inputs/rasters/",full.names = T) |> lapply(raster::ras
 ##Ya está aislada en supabase. Para leerla de texto a hexadecimal:
 #clues_en_operacion |> dplyr::select(CLUES,geometry) |> dplyr::collect() |> dplyr::mutate(geometry= sf::st_as_sfc(structure(geometry,class = "WKB" ),EWKB=T))
 #Usar .zip 
-#temp_dir=tempdir()
-#archive::archive_extract(archive = "outputs/confidenciales/clues_SINERHIAS_int.zip",password = Sys.getenv("pass"),dir = temp_dir)
-#sinerhias=DBI::dbConnect(RSQLite::SQLite(), list.files(temp_dir,pattern = "clues_SINERHIAS_int.sqlite",full.names = T))
+temp_dir=tempdir()
+archive::archive_extract(archive = "outputs/confidenciales/clues_SINERHIAS_int.zip",password = Sys.getenv("pass"),dir = temp_dir)
+sinerhias=DBI::dbConnect(RSQLite::SQLite(), list.files(temp_dir,pattern = "clues_SINERHIAS_int.sqlite",full.names = T))
 
 #Usar archivo directo
-sinerhias=DBI::dbConnect(RSQLite::SQLite(),  "outputs/confidenciales/clues_SINERHIAS_int.sqlite")
+#sinerhias=DBI::dbConnect(RSQLite::SQLite(),  "outputs/confidenciales/clues_SINERHIAS_int.sqlite")
 
 source("codigos/funciones.R")
 #Cobertura
@@ -442,7 +444,7 @@ shinyApp(ui, function(input, output,session) {
                   "<b>Agregar AGEBs y Localidades</b><br/>Activa esta opción para añadir datos demográficos de AGEBs y localidades al mapa. ",
                   "<b>Mapa Principal e Interactividad</b><br/> *: Puedes dar click en un CLUES para conocer información de accesibilidad (tiempo en minutos alrededor) y demográfica (población). <br> *: Da click a un polígono para concer la información de accesibilidad (Hospital más cercano y número de CLUES por tipo y rango de tiempo) y demográficas (Población total y afiliada a SS). <br> **: También puedes utilizar la herramienta de dibujo para seleccionar varios AGEBs y obtener un resumen. ",
                   "<b>Filtrar por Tiempo de Accesibilidad</b><br/>Usa este deslizador para seleccionar un tiempo en minutos. El sistema filtrará las localidades que tienen una accesibilidad en minutos mayor al valor seleccionado. El valor por defécto de 58 corresponde al indicador de accesibilidad de CONEVAL (2010) 'Tiempo promedio de traslado al hospital la última vez que se tuvo una emergencia'  ",
-                  "<b>Descargar Datos</b><br/>Descarga los datos filtrados por tiempo en diferentes formatos (XLSX para municipios/localidades, GeoJSON para AGEBs).",
+                  "<b>Descargar Datos</b><br/>Descarga los datos filtrados por tiempo en diferentes formatos (XLSX para municipios, localidades y AGEBs).",
                   "<b>Tabla de Desglose</b><br/>Visualiza los datos detallados por municipios, localidades o AGEBs. Los datos se actualizan automáticamente según el tiempo seleccionado.",
                   "<b>Explora la infraestructura de salud disponible para CLUES del sector Público. Agrega filtros según el catálogo de SINERHIAS para visualizar los CLUES que cumplen con las condiciones seleccionadas."
                 )
