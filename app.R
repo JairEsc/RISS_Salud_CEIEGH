@@ -64,12 +64,12 @@ lista_rasters=list.files("inputs/rasters/",full.names = T) |> lapply(raster::ras
 ##Ya está aislada en supabase. Para leerla de texto a hexadecimal:
 #clues_en_operacion |> dplyr::select(CLUES,geometry) |> dplyr::collect() |> dplyr::mutate(geometry= sf::st_as_sfc(structure(geometry,class = "WKB" ),EWKB=T))
 #Usar .zip 
-temp_dir=tempdir()
-archive::archive_extract(archive = "outputs/confidenciales/clues_SINERHIAS_int.zip",password = Sys.getenv("pass"),dir = temp_dir)
-sinerhias=DBI::dbConnect(RSQLite::SQLite(), list.files(temp_dir,pattern = "clues_SINERHIAS_int.sqlite",full.names = T))
+#temp_dir=tempdir()
+#archive::archive_extract(archive = "outputs/confidenciales/clues_SINERHIAS_int.zip",password = Sys.getenv("pass"),dir = temp_dir)
+#sinerhias=DBI::dbConnect(RSQLite::SQLite(), list.files(temp_dir,pattern = "clues_SINERHIAS_int.sqlite",full.names = T))
 
 #Usar archivo directo
-#sinerhias=DBI::dbConnect(RSQLite::SQLite(),  "outputs/confidenciales/clues_SINERHIAS_int.sqlite")
+sinerhias=DBI::dbConnect(RSQLite::SQLite(),  "outputs/confidenciales/clues_SINERHIAS_int.sqlite")
 
 source("codigos/funciones.R")
 #Cobertura
@@ -218,9 +218,9 @@ shinyApp(ui, function(input, output,session) {
       }
       # print("Raster a elegir:")
       # print(elegirRaster(input$nivel_at,tipo_filtro))
-      print(paste0(nrow(clues_solicitados)," CLUES de ",stringr::str_to_lower(input$nivel_at)) )
+      #print(paste0(nrow(clues_solicitados)," CLUES de ",stringr::str_to_lower(input$nivel_at)) )
       if(nrow(clues_solicitados)==0){
-        return(leafletProxy("mapa_principal") |> ##Esta función se puede generalizar y aislar
+        return(leafletProxy("mapa_principal") |> 
                clearProxy(markers = T,images = T,group = "CLUES",shapes =paste0("Isocronas",1:5),controls = "Accesibilidad en minutos2" ) 
         )
       }
@@ -229,7 +229,7 @@ shinyApp(ui, function(input, output,session) {
       tiempo_zona_peatonal=elegirRaster(input$nivel_at,tipo_filtro,peatonal = T) |> raster::raster()
       iso1_sigeh=raster::rasterToContour(tiempo_zona_auto, levels = c(10,20,40,60,90))|> st_as_sf() |> st_set_crs(st_crs("EPSG:32614")) |>st_transform(st_crs("EPSG:4326"))
       memoriaPublicosPrivados$actualizar=FALSE
-      leafletProxy("mapa_principal") |> ##Esta función se puede generalizar y aislar
+      leafletProxy("mapa_principal") |>
         clearProxy(markers = T,images = T,group = "CLUES",shapes =paste0("Isocronas",1:nrow(iso1_sigeh)),controls = "Accesibilidad en minutos2" ) |> 
         addMarkers_custom(data = clues_solicitados) |> 
         addRasterImage(projectRasterForLeaflet(tiempo_zona_auto,method = "ngb"),colors = "Spectral",group = "Accesibilidad carretera (en minutos)") |> 
@@ -265,33 +265,31 @@ shinyApp(ui, function(input, output,session) {
   
   observeEvent(input$mapa_principal_marker_click,{# Click sobre un clues
     req(selected_tab() == "map")
-    #print(clues_solicitadosss$df)
-    #print(input$mapa_principal_marker_click)
     datos_del_clues=clues_solicitadosss$df |> ##Estamos conservando todas las columnas del CLUEs aunque no todas se muestran
       dplyr::filter(dplyr::row_number() == as.numeric(gsub("CLUES","",input$mapa_principal_marker_click$id) )) ##Datos del clues seleccionado
+    isocronas_niveles_fijos=fetchGeojsonS3(CLUES_id = datos_del_clues$CLUES)
     punto_referencia_fijo=st_point(c(input$mapa_principal_marker_click$lng ,input$mapa_principal_marker_click$lat)) |> st_sfc(crs = 4326)
-    #print(punto_referencia_fijo)
-    isocronas_niveles_fijos <- tryCatch({
-      res_raster <- gdistance::accCost(T.GC, punto_referencia_fijo |> st_transform(st_crs("EPSG:32614")) |> unlist())
-      
-      contornos <- raster::rasterToContour(res_raster, levels = 10 * c(1:9)) |> 
-        st_as_sf() |> 
-        st_set_crs(st_crs("EPSG:32614"))
-      contornos 
-    }, error = function(e) {
-      message("Error en accCost: Generando círculos concéntricos como respaldo.")
-      punto_proyectado = punto_referencia_fijo |> st_transform(st_crs("EPSG:32614"))
-      # Creamos una secuencia de radios
-      radios <- seq(100, 2500, by = 300)
-      circulos <- do.call(rbind, lapply(radios, function(r) {
-        st_buffer(punto_proyectado, dist = r) |> st_as_sf() |> 
-          dplyr::mutate(level = as.character(r / 30))
-      }))
-      return(circulos)
-    })
-    isocronas_niveles_fijos <- isocronas_niveles_fijos |> 
-      dplyr::arrange(dplyr::desc(level)) |> 
-      st_transform(st_crs("EPSG:4326"))
+    # isocronas_niveles_fijos <- tryCatch({
+    #   res_raster <- gdistance::accCost(T.GC, punto_referencia_fijo |> st_transform(st_crs("EPSG:32614")) |> unlist())
+    # 
+    #   contornos <- raster::rasterToContour(res_raster, levels = 10 * c(1:9)) |>
+    #     st_as_sf() |>
+    #     st_set_crs(st_crs("EPSG:32614"))
+    #   contornos
+    # }, error = function(e) {
+    #   message("Error en accCost: Generando círculos concéntricos como respaldo.")
+    #   punto_proyectado = punto_referencia_fijo |> st_transform(st_crs("EPSG:32614"))
+    #   # Creamos una secuencia de radios
+    #   radios <- seq(100, 2500, by = 300)
+    #   circulos <- do.call(rbind, lapply(radios, function(r) {
+    #     st_buffer(punto_proyectado, dist = r) |> st_as_sf() |>
+    #       dplyr::mutate(level = as.character(r / 30))
+    #   }))
+    #   return(circulos)
+    # })
+    # isocronas_niveles_fijos <- isocronas_niveles_fijos |>
+    #   dplyr::arrange(dplyr::desc(level)) |>
+    #   st_transform(st_crs("EPSG:4326"))
     ##Lo agregamos al mapa principal
     leafletProxy("mapa_principal") |> 
       addPolygons(

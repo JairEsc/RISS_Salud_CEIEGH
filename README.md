@@ -90,3 +90,9 @@ Comentario técnico: como es de esperarse, el costo computacional es alto. Dada 
 </p>
 
 <p align="center"><em>Detalle de la información geográfica y demográfica asociada a CLUES y AGEB.</em></p>
+
+
+
+####### Notas
+En R, tuve conflicto entre renv.lock (que utiliza el dockerfile) y rsconnect::writeManifest() que utilizo para posit.cloud. 
+Prueba utilizar ```rsconnect::writeManifest(dependencyResolution = "library")```

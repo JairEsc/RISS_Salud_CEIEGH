@@ -8,5 +8,6 @@ codigos/deprecated/conexion_supabase.R
 rsconnect/*
 .positai
 outputs/confidenciales/*
+outputs/isocronas_pre_calculadas/*
 !outputs/confidenciales/Nota.txt
 !outputs/confidenciales/*zip

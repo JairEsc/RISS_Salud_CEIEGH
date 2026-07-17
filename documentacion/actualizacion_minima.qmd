@@ -61,7 +61,7 @@ Lee un .geojson que incluye información demográfica
 
 - tiempo_promedio_clues\_...
 
-Explícitamente usadas: \
+Explícitamente usadas:\
 
 En POP-UP:
 
@@ -69,14 +69,14 @@ NOM_MUN, NOMGEO, POB1, SALUD1, tiempo_promedio_clues_N1_mas_cercano, tiempo_prom
 
 En Tablas para descargar: \### Este se va a corregir para incluir grupos etarios
 
-tiempo_promedio_clues_N3_mas_cercano, POB84, POB42, CLUES_N1_10, CLUES_N1_20, CLUES_N1_40, CLUES_N1_60, id_clues_N1_mas_cercano, nombre_clues_N1_mas_cercano, \
-... CLUESN2, \
+tiempo_promedio_clues_N3_mas_cercano, POB84, POB42, CLUES_N1_10, CLUES_N1_20, CLUES_N1_40, CLUES_N1_60, id_clues_N1_mas_cercano, nombre_clues_N1_mas_cercano,\
+... CLUESN2,\
 ... CLUESN3,\
 Repetidos (tiempo_promedio_clues_N(1,2,3)\_mas_cercano)
 
 ### definicion_custom_markers
 
-addMarkers_custom() \
+addMarkers_custom()\
 Dado un leafletProxy, le agrega CLUES (debe contener el nivel de atención) de acuerdo a su nivel de atención distinguiendo por colores.
 
 ### clues_demograficos_municipios.sqlite
@@ -136,3 +136,7 @@ Se deben actualizar/generar 3 objetos.
 - sqlite \### Contiene las tablas descritas
 
 - .geojson \## Es una de las tablas (demograficos)
+
+#### Notas 
+
+En R, tuve conflicto entre renv.lock (que utiliza el dockerfile) y rsconnect::writeManifest() que utilizo para posit.cloud. Prueba utilizar `rsconnect::writeManifest(dependencyResolution = "library")`
