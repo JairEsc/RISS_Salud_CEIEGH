@@ -51,6 +51,84 @@ tour_button_css="
         font-size: 16px;
       }
     "
+introjs_tooltip_css="
+      .introjs-tooltip {
+        background: linear-gradient(135deg, #ffffff 0%, #f8fbff 100%);
+        border-radius: 18px;
+        box-shadow: 0 16px 40px rgba(15, 23, 42, 0.18);
+        border: 1px solid rgba(0, 102, 87, 0.12);
+        max-width: 390px;
+        color: #1f2937;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      }
+      .introjs-tooltiptext {
+        font-size: 14px;
+        line-height: 1.6;
+      }
+      .introjs-tooltiptext b {
+        color: #006657;
+      }
+      .introjs-tooltiptext .tour-card {
+        padding: 2px 0;
+      }
+      .introjs-tooltiptext .tour-list {
+        list-style: none;
+        padding-left: 0;
+        margin: 10px 0 0;
+      }
+      .introjs-tooltiptext .tour-list li {
+        display: flex;
+        align-items: flex-start;
+        gap: 8px;
+        margin-bottom: 8px;
+      }
+      .introjs-tooltiptext .tour-bullet {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #006657, #0f766e);
+        color: #fff;
+        font-size: 10px;
+        flex-shrink: 0;
+        margin-top: 3px;
+      }
+      .introjs-tooltiptext .tour-badge {
+        display: inline-block;
+        margin-top: 6px;
+        padding: 3px 8px;
+        border-radius: 999px;
+        background: #ecfdf5;
+        color: #166534;
+        border: 1px solid #a7f3d0;
+        font-size: 11px;
+        font-weight: 600;
+      }
+      .introjs-button {
+        border-radius: 999px;
+        padding: 7px 14px;
+        background: #006657;
+        color: #fff;
+        border: none;
+        box-shadow: 0 4px 10px rgba(0, 102, 87, 0.2);
+      }
+      .introjs-button:hover {
+        background: #005245;
+        color: #fff;
+      }
+      .introjs-prevbutton {
+        background: #f3f4f6 !important;
+        color: #374151 !important;
+      }
+      .introjs-skipbutton {
+        color: #6b7280;
+      }
+      .introjs-helperLayer {
+        box-shadow: 0 0 0 5000px rgba(15, 23, 42, 0.35) !important;
+      }
+    "
 sidebar_last_child_css="
       #sidebarItemExpanded > ul > :last-child {
         position: absolute;
