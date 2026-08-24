@@ -32,9 +32,10 @@ for(i in 1:nrow(clues_en_operacion)){
   isocronas_i=row |> isocronas()|> 
     dplyr::arrange(dplyr::desc(level)) |> 
     st_transform(st_crs("EPSG:4326"))
-  st_write(isocronas_i,
-           paste0("outputs/isocronas_pre_calculadas/",row$CLUES,".geojson"),driver='GeoJSON',append = F,delete_dsn  = T )
+  # st_write(isocronas_i,
+  #          paste0("outputs/isocronas_pre_calculadas/",row$CLUES,".geojson"),driver='GeoJSON',append = F,delete_dsn  = T )
   aws.s3::put_object(file=paste0("outputs/isocronas_pre_calculadas/",row$CLUES,".geojson"),object = paste0("isocronas/",row$CLUES,".geojson"),
                      bucket = Sys.getenv("bucket"))
 }
+
 

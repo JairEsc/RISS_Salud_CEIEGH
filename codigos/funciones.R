@@ -325,7 +325,7 @@ estadisticas_dado_nivel_atencion_y_tiempo=function(nivel,tiempo){
   return(list(lista_agebs,conteo_por_localidad,conteo_por_municipio,popupsContents))
 }
 fetchGeojsonS3=function(CLUES_id){
-  cloudfront_base <- "https://d2846sv6eoiius.cloudfront.net"
+  cloudfront_base <- "https://d3v55l3c4xcl8m.cloudfront.net"
   geojson_url <- paste0(cloudfront_base, "/isocronas/", CLUES_id, ".geojson")
   
   req <- try(httr::GET(geojson_url), silent = TRUE)
