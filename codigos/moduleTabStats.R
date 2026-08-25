@@ -169,9 +169,9 @@ tabStatsServer <- function(id, nivel_at, selected_tab) {
                              'Tiempo promedio a CLUES N2'='tiempo_promedio_CLUES_N2',
                              'Tiempo promedio a CLUES N3'='tiempo_promedio_CLUES_N3',
                              
-                             'CLUES N1 más cercano'='id_clues_N1_mas_cercano','Nombre del CLUES N1 más cercano'='nombre_clues_N1_mas_cercano',
-                             'CLUES N2 más cercano'='id_clues_N2_mas_cercano','Nombre del CLUES N2 más cercano'='nombre_clues_N2_mas_cercano',
-                             'CLUES N3 más cercano'='id_clues_N3_mas_cercano','Nombre del CLUES N3 más cercano'='nombre_clues_N3_mas_cercano',
+                             'CLUES N1 más cercano'='id_clues_N1_mas_cercano', 'Nombre del CLUES N1 más cercano'='nombre_clues_N1_mas_cercano',
+                             'CLUES N2 más cercano'='id_clues_N2_mas_cercano', 'Nombre del CLUES N2 más cercano'='nombre_clues_N2_mas_cercano',
+                             'CLUES N3 más cercano'='id_clues_N3_mas_cercano', 'Nombre del CLUES N3 más cercano'='nombre_clues_N3_mas_cercano',
                              'Núm.  de CLUES N1 a menos de 10 mins.'='CLUES_N1_10',
                              'Núm.  de CLUES N1 a menos de 60 mins.'='CLUES_N1_60','Porcentaje %'='POB_rel')
                 )
@@ -233,20 +233,51 @@ tabStatsServer <- function(id, nivel_at, selected_tab) {
       content = function(file) {
         tab <- input$tab_detalle
         if(tab == "Municipios"){
+          
+          
+          
           mun <- listas_estadisticas()[[3]]
           mun_df <- tryCatch({ sf::st_drop_geometry(mun) }, error = function(e) mun)
           
-          openxlsx::write.xlsx(mun_df, file)
+          
+          diccionario = "outputs/Dicccionarios/diccionario_municipal.xlsx" |>  readxl::read_excel()
+          excel = openxlsx::createWorkbook()
+          excel |>  openxlsx::addWorksheet("Municipios")
+          excel |>  openxlsx::writeData(sheet = "Municipios", x = mun_df)
+          excel |>  openxlsx::addWorksheet("Diccionario")
+          excel |>  openxlsx::writeData(sheet = "Diccionario", x = diccionario)
+          
+          openxlsx::saveWorkbook(wb = excel, file = file, overwrite = T)
           
         } else if(tab == "Localidades"){
           loc <- listas_estadisticas()[[2]]
           loc_df <- tryCatch({ sf::st_drop_geometry(loc) }, error = function(e) loc)
-          writexl::write_xlsx(loc_df, path = file)
-         
+          
+          
+          diccionario = "outputs/Dicccionarios/diccionario_localidad.xlsx" |>  readxl::read_excel()
+          excel = openxlsx::createWorkbook()
+          excel |>  openxlsx::addWorksheet("Localidades")
+          excel |>  openxlsx::writeData(sheet = "Localidades", x = loc_df)
+          excel |>  openxlsx::addWorksheet("Diccionario")
+          excel |>  openxlsx::writeData(sheet = "Diccionario", x = diccionario)
+          
+          openxlsx::saveWorkbook(wb = excel, file = file, overwrite = T)
+          
+
         } else if(tab == "AGEBs"){
           ageb_sf <- listas_estadisticas()[[1]]
           ageb_df = tryCatch({ sf::st_drop_geometry(ageb_sf) }, error = function(e) ageb_sf)
-          writexl::write_xlsx(ageb_df, path = file)
+          
+          #print(ageb_df)
+          
+          diccionario = "outputs/Dicccionarios/diccionario_ageb.xlsx" |>  readxl::read_excel()
+          excel = openxlsx::createWorkbook()
+          excel |>  openxlsx::addWorksheet("AGEB")
+          excel |>  openxlsx::writeData(sheet = "AGEB", x = ageb_df)
+          excel |>  openxlsx::addWorksheet("Diccionario")
+          excel |>  openxlsx::writeData(sheet = "Diccionario", x = diccionario)
+          
+          openxlsx::saveWorkbook(wb = excel, file = file, overwrite = T)
         } else {
           # fallback: write a small text file
           writeLines("No data for selected tab.", con = file)
