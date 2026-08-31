@@ -113,10 +113,10 @@ generadorPopUpContentDemog=function(poligono){
       format(round(poligono$SALUD1, 0), big.mark = ","), " habitantes"
       ,"<br>",
       "<strong>Tiempo promedio a CLUES de nivel 1 más cercano:</strong> ", 
-      format(round(poligono$tiempo_promedio_CLUES_N1 |>  as.numeric(), 1), big.mark = ","), " minutos "
+      format(round(poligono$tiempo_promedio_clues_N1_mas_cercano |>  as.numeric(), 1), big.mark = ","), " minutos "
       ,"<br>",
       "<strong>Tiempo promedio a CLUES de nivel 2 más cercano:</strong> ", 
-      format(round(poligono$tiempo_promedio_CLUES_N2 |>  as.numeric(), 1), big.mark = ","), " minutos"
+      format(round(poligono$tiempo_promedio_clues_N2_mas_cercano |>  as.numeric(), 1), big.mark = ","), " minutos"
 
     )
   )
@@ -329,7 +329,9 @@ estadisticas_dado_nivel_atencion_y_tiempo=function(nivel,tiempo){
       tiempo_promedio_CLUES_N3=round(tiempo_promedio_clues_N3_mas_cercano,1)
     ) |> dplyr::select(-tiempo_promedio_clues_N1_mas_cercano,-tiempo_promedio_clues_N2_mas_cercano,-tiempo_promedio_clues_N3_mas_cercano)
   
-  popupsContents=generadorPopUpContentDemog(lista_agebs)
+  popupsContents=generadorPopUpContentDemog(lista_agebs |>
+  dplyr::rename(tiempo_promedio_clues_N1_mas_cercano=tiempo_promedio_CLUES_N1,
+  tiempo_promedio_clues_N2_mas_cercano=tiempo_promedio_CLUES_N2))
   
   return(list(lista_agebs,conteo_por_localidad,conteo_por_municipio,popupsContents))
 }

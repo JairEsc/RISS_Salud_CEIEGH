@@ -88,7 +88,7 @@ tabInfraServer <- function(id, nivel_at, selected_tab, clues_en_operacion, siner
           catalog$NombreVar,
           catalog$Descripcion.de.la.variable
         )
-        print(lista_opciones[['catalogo']])
+        #print(lista_opciones[['catalogo']])
         ##conexion a la tabla de clues
         lista_opciones[['tabla']] <- dplyr::tbl(sinerhias, paste0(nivel_atencion, "CLUES_SINERHIAS"))
         
@@ -128,10 +128,10 @@ tabInfraServer <- function(id, nivel_at, selected_tab, clues_en_operacion, siner
         
         if (is.null(consulta_actual)) return(invisible(NULL))
         ##Actualizamos la frase
-        print("Sinerhias nivel actual:")
-        print(sinerhias_nivel_actual() |> dplyr::count() |> dplyr::collect())
-        print("Consulta actual:")
-        print(consulta_actual |> nrow())
+        # print("Sinerhias nivel actual:")
+        # print(sinerhias_nivel_actual() |> dplyr::count() |> dplyr::collect())
+        # print("Consulta actual:")
+        # print(consulta_actual |> nrow())
         porcentaje(round(100 * nrow(consulta_actual) / (sinerhias_nivel_actual() |> dplyr::count() |> dplyr::collect()), 2))
         clues_con_equipam <- consulta_actual |> 
           dplyr::mutate(geometry = sf::st_as_sfc(structure(geometry, class = "WKB"), EWKB = T)) |>

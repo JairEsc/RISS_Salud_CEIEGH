@@ -20,6 +20,7 @@ inputs/*
 !inputs/rasters/*
 outputs/*
 !outputs/confidenciales/clues_SINERHIAS_int.zip
+!outputs/confidenciales/clues_SINERHIAS_int.sqlite
 !outputs/confidenciales/Nota.txt
 !outputs/demograficos_con_info_accesibilidad.geojson
 !outputs/Diccionarios/*
