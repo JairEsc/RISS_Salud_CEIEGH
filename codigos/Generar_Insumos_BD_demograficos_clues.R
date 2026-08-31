@@ -93,7 +93,6 @@ demograficos_scince_s <- demograficos_scince |>
     nombre_clues_N1_mas_cercano,nombre_clues_N2_mas_cercano,nombre_clues_N3_mas_cercano
   )
 
-# 3. Definición base de tipos de datos fijos
 tipos_demograficos <- c(
   CVEGEO = "VARCHAR(13)",
   id_clues_N1_mas_cercano = "CHAR(11)",
@@ -104,7 +103,6 @@ tipos_demograficos <- c(
   tiempo_promedio_clues_N3_mas_cercano = "FLOAT(3)"
 )
 
-# 4. Reutilización y detección masiva de columnas con grep
 
 # Columnas de Población y Salud (POB1 a SALUD10) -> MEDIUMINT
 columnas_pob_salud_scince <- grep("^(POB|SALUD)", names(demograficos_scince_s), value = TRUE)
@@ -118,7 +116,6 @@ tipos_clues_tiempo <- setNames(rep("CHAR(11)", length(columnas_clues_tiempo)), c
 # Unimos todas las definiciones de tipos en un solo vector
 field_types_scince <- c(tipos_demograficos, tipos_pob_salud_scince, tipos_clues_tiempo)
 
-# 5. Escritura en SQLite aplicando la optimización
 st_write(
   obj = demograficos_scince_s |> 
     st_simplify(preserveTopology = T,dTolerance = 100), 

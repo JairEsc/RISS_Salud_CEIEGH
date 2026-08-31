@@ -137,6 +137,6 @@ Se deben actualizar/generar 3 objetos.
 
 - .geojson \## Es una de las tablas (demograficos)
 
-#### Notas 
+#### Notas
 
 En R, tuve conflicto entre renv.lock (que utiliza el dockerfile) y rsconnect::writeManifest() que utilizo para posit.cloud. Prueba utilizar `rsconnect::writeManifest(dependencyResolution = "library")`

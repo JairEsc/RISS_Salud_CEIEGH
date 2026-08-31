@@ -42,7 +42,7 @@ tabStatsUI=function(id){
   ))
 }
 
-tabStatsServer <- function(id, nivel_at, selected_tab) {
+tabStatsServer <- function(id, nivel_at, selected_tab,limites_municipales,diccionarios) {
   moduleServer(
     id,
     function(input, output, session) {
@@ -57,7 +57,6 @@ tabStatsServer <- function(id, nivel_at, selected_tab) {
       
     })
 
-    
     #Renderizar cajitas de valores
     output$total_pob <- renderValueBox({
       res <- listas_estadisticas()[[3]]
@@ -84,8 +83,6 @@ tabStatsServer <- function(id, nivel_at, selected_tab) {
       res <- listas_estadisticas()[[2]]
       valueBox(nrow(res), "Localidades fuera de cobertura", icon = icon("house-circle-exclamation"), color = "teal")
     })
-    
-    
     output$tabla_mun <- DT::renderDT({
       datatable(listas_estadisticas()[[3]] |> st_drop_geometry(), 
                 options = list(pageLength = 10, scrollX = TRUE, dom = 'ftp',
@@ -103,8 +100,10 @@ tabStatsServer <- function(id, nivel_at, selected_tab) {
                                language = list(url = '//cdn.datatables.net/plug-ins/1.10.11/i18n/Spanish.json')),
                 rownames = FALSE, class = 'cell-border stripe',
                 colnames = c('Municipio'='NOM_MUN','Localidad'='NOMGEO','Población Total'='POB1',
-                             'Población Afiliada a SS'='SALUD1','Tiempo promedio a CLUES N1'='tiempo_promedio_CLUES_N1',
-                             
+                             'Población Afiliada a SS'='SALUD1',
+                             'Tiempo promedio a CLUES N1'='tiempo_promedio_CLUES_N1',
+                             'Tiempo promedio a CLUES N2'='tiempo_promedio_CLUES_N2',
+                             'Tiempo promedio a CLUES N3'='tiempo_promedio_CLUES_N3',
                              "Población de \n 0 a 2 \n años" = "POB_0a2",                              
                              "Población de \n 3 a 5 \n años" = "POB_3a5",                             
                              "Población de \n 6 a 11 \n años" = "POB_6a11",                             
@@ -125,21 +124,20 @@ tabStatsServer <- function(id, nivel_at, selected_tab) {
                              "Población femenina de \n 12 a 14 \n años" = "POBF_12a14",                           
                              "Población femenina de \n 15 a 19 \n años" = "POBF_15a19",                           
                              "Población femenina de \n 20 a 59 \n años" = "POBF_20a59",                          
-                             "Población femenina de \n 60 años y más" = "POBF_60ymas",
-                             
-                             'Tiempo promedio a CLUES N2'='tiempo_promedio_CLUES_N2',
-                             'Tiempo promedio a CLUES N3'='tiempo_promedio_CLUES_N3'))
+                             "Población femenina de \n 60 años y más" = "POBF_60ymas"
+                             ))
     })
     output$tabla_ageb <- DT::renderDT({
       datatable(listas_estadisticas()[[1]] |> st_drop_geometry(), 
-                options = list(pageLength = 10, scrollX = TRUE, dom = 'ftp',
+                options = list(pageLength = 5, scrollX = TRUE, dom = 'ftp',
+                               fixedHeader=T,
                                language = list(url = '//cdn.datatables.net/plug-ins/1.10.11/i18n/Spanish.json')),
                 rownames = FALSE, class = 'cell-border stripe',
                 colnames = c('Municipio'='NOM_MUN',
                              'Localidad'='NOMGEO',
                              'Población Total'='POB1',
-                             'Población Hombres'='POB42',
-                             'Población Mujeres'='POB84',
+                             'Población Mujeres'='POB42',
+                             'Población Hombres'='POB84',
                              
                              "Población de \n 0 a 2 \n años" = "POB_0a2",                              
                              "Población de \n 3 a 5 \n años" = "POB_3a5",                             
@@ -165,38 +163,48 @@ tabStatsServer <- function(id, nivel_at, selected_tab) {
                              
                              
                              
-                             'Población Afiliada a SS'='SALUD1','Tiempo promedio a CLUES N1'='tiempo_promedio_CLUES_N1',
+                             'Población Afiliada a SS'='SALUD1',
+                             'Tiempo promedio a CLUES N1'='tiempo_promedio_CLUES_N1',
                              'Tiempo promedio a CLUES N2'='tiempo_promedio_CLUES_N2',
                              'Tiempo promedio a CLUES N3'='tiempo_promedio_CLUES_N3',
                              
-                             'CLUES N1 más cercano'='id_clues_N1_mas_cercano', 'Nombre del CLUES N1 más cercano'='nombre_clues_N1_mas_cercano',
-                             'CLUES N2 más cercano'='id_clues_N2_mas_cercano', 'Nombre del CLUES N2 más cercano'='nombre_clues_N2_mas_cercano',
-                             'CLUES N3 más cercano'='id_clues_N3_mas_cercano', 'Nombre del CLUES N3 más cercano'='nombre_clues_N3_mas_cercano',
-                             'Núm.  de CLUES N1 a menos de 10 mins.'='CLUES_N1_10',
-                             'Núm.  de CLUES N1 a menos de 60 mins.'='CLUES_N1_60','Porcentaje %'='POB_rel')
+                             'CLUES N1 más cercano'='id_clues_N1_mas_cercano', 
+                             'Nombre del CLUES N1 más cercano'='nombre_clues_N1_mas_cercano',
+                             'CLUES N2 más cercano'='id_clues_N2_mas_cercano', 
+                             'Nombre del CLUES N2 más cercano'='nombre_clues_N2_mas_cercano',
+                             'CLUES N3 más cercano'='id_clues_N3_mas_cercano', 
+                             'Nombre del CLUES N3 más cercano'='nombre_clues_N3_mas_cercano',
+                             'Número  de CLUES N1 a menos de 10 mins.'='CLUES_N1_10',
+                             'Número de CLUES N1 a menos de 60 mins.'='CLUES_N1_60',
+                             'Número  de CLUES N2 a menos de 10 mins.'='CLUES_N2_10',
+                             'Número  de CLUES N2 a menos de 60 mins.'='CLUES_N2_60',
+                             'Porcentaje %'='POB_rel')
                 )
     })
     output$mapa_stats <- renderLeaflet({
       lst <- listas_estadisticas()
-      capa_sf <- lst[[1]]
+      #capa_sf <- lst[[1]]
       m <- leaflet() |> 
-        addProviderTiles(providers$CartoDB.Positron) |> 
-        setView(lng = -98.83284,lat = 20.45979,zoom = 8)
-      if(!is.null(capa_sf) && nrow(capa_sf) > 0){
-        pal <- colorNumeric(palette = "YlOrRd", domain = c(0, max(c(0, max(capa_sf$POB_rel, na.rm = TRUE)))))
-        m <- m |> addPolygons(data = capa_sf,
-                              fillColor = pal(capa_sf$POB_rel),fillOpacity = 0.9,
-                              color = pal(capa_sf$POB_rel), weight = 7,opacity = 1,
-                              label = ~paste0("CVEGEO: ", CVEGEO, " (", POB_rel, "%)"),
-                              popup = lst[[4]]
-        ) |> 
-          addLegendNumeric( pal = pal , 
-                                        values = seq(0,max(c(0,max(listas_estadisticas()[[1]]$POB_rel))
-                                        ),0.1), position='bottomright',
-                                        title = '% pob por localidad', orientation = 'horizontal', 
-                                        shape = 'rect', decreasing = FALSE, height = 20,width = 150,tickLength = 0)
+        setView(lng = -98.83284,lat = 20.45979,zoom = 8) |> 
+        addProviderTiles(providers$Stadia.AlidadeSmooth) |> 
+        addPolygons(data=limites_municipales,color = "black",weight = 1,fillColor = "lightgray",opacity = 0.3,fillOpacity = 0.1,
+                    label=paste0("Municipio:" ,limites_municipales$NOM_MUN),group='municipios') 
         
-      }
+      # if(!is.null(capa_sf) && nrow(capa_sf) > 0){
+      #   pal <- colorNumeric(palette = "YlOrRd", domain = c(0, max(c(0, max(capa_sf$POB_rel, na.rm = TRUE)))))
+      #   m <- m |> addPolygons(data = capa_sf,
+      #                         fillColor = pal(capa_sf$POB_rel),fillOpacity = 0.9,
+      #                         color = pal(capa_sf$POB_rel), weight = 7,opacity = 1,
+      #                         label = ~paste0("CVEGEO: ", CVEGEO, " (", POB_rel, "%)"),
+      #                         popup = lst[[4]]
+      #   ) |> 
+      #     addLegendNumeric( pal = pal , 
+      #                                   values = seq(0,max(c(0,max(listas_estadisticas()[[1]]$POB_rel))
+      #                                   ),0.1), position='bottomright',
+      #                                   title = '% pob por localidad', orientation = 'horizontal', 
+      #                                   shape = 'rect', decreasing = FALSE, height = 20,width = 150,tickLength = 0)
+      #   
+      # }
       m
     })
     
@@ -207,7 +215,6 @@ tabStatsServer <- function(id, nivel_at, selected_tab) {
                                                          )))##El máximo de un conjunto vacío es -Inf, por eso tomamos el máximo
 
       leafletProxy("mapa_stats", session = session) |>
-        clearShapes() |>
         clearControls() |> 
         addPolygons(data = capa_sf,
                     fillColor =pal(capa_sf$POB_rel),fillOpacity = 0.9,
@@ -240,7 +247,7 @@ tabStatsServer <- function(id, nivel_at, selected_tab) {
           mun_df <- tryCatch({ sf::st_drop_geometry(mun) }, error = function(e) mun)
           
           
-          diccionario = "outputs/Dicccionarios/diccionario_municipal.xlsx" |>  readxl::read_excel()
+          diccionario = diccionarios[['diccionario_municipal']]
           excel = openxlsx::createWorkbook()
           excel |>  openxlsx::addWorksheet("Municipios")
           excel |>  openxlsx::writeData(sheet = "Municipios", x = mun_df)
@@ -254,7 +261,7 @@ tabStatsServer <- function(id, nivel_at, selected_tab) {
           loc_df <- tryCatch({ sf::st_drop_geometry(loc) }, error = function(e) loc)
           
           
-          diccionario = "outputs/Dicccionarios/diccionario_localidad.xlsx" |>  readxl::read_excel()
+          diccionario =diccionarios[['diccionario_localidad']]
           excel = openxlsx::createWorkbook()
           excel |>  openxlsx::addWorksheet("Localidades")
           excel |>  openxlsx::writeData(sheet = "Localidades", x = loc_df)
@@ -267,10 +274,8 @@ tabStatsServer <- function(id, nivel_at, selected_tab) {
         } else if(tab == "AGEBs"){
           ageb_sf <- listas_estadisticas()[[1]]
           ageb_df = tryCatch({ sf::st_drop_geometry(ageb_sf) }, error = function(e) ageb_sf)
-          
-          #print(ageb_df)
-          
-          diccionario = "outputs/Dicccionarios/diccionario_ageb.xlsx" |>  readxl::read_excel()
+                    
+          diccionario = diccionarios[['diccionario_ageb']]
           excel = openxlsx::createWorkbook()
           excel |>  openxlsx::addWorksheet("AGEB")
           excel |>  openxlsx::writeData(sheet = "AGEB", x = ageb_df)

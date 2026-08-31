@@ -60,16 +60,20 @@ source("codigos/extras_css.R")
 local=DBI::dbConnect(RSQLite::SQLite(), "clues_demograficos_municipios_simple.sqlite")#Contiene CLUES, Municipios y AGEBS
 clues_en_operacion=dplyr::tbl(local,"clues_en_operacion")
 limites_municipales=sf::st_read(local,"limite_municipal")
+diccionarios="outputs/Diccionarios/" |> 
+  list.files(full.names = T)
+diccionarios=diccionarios |> lapply(\(z) readxl::read_excel(z)) |> 
+  setNames(gsub(".xlsx","",basename(diccionarios)))
 lista_rasters=list.files("inputs/rasters/",full.names = T) |> lapply(raster::raster)
 ##Ya está aislada en supabase. Para leerla de texto a hexadecimal:
 #clues_en_operacion |> dplyr::select(CLUES,geometry) |> dplyr::collect() |> dplyr::mutate(geometry= sf::st_as_sfc(structure(geometry,class = "WKB" ),EWKB=T))
 #Usar .zip 
-#temp_dir=tempdir()
-#archive::archive_extract(archive = "outputs/confidenciales/clues_SINERHIAS_int.zip",password = Sys.getenv("pass"),dir = temp_dir)
-#sinerhias=DBI::dbConnect(RSQLite::SQLite(), list.files(temp_dir,pattern = "clues_SINERHIAS_int.sqlite",full.names = T))
+temp_dir=tempdir()
+archive::archive_extract(archive = "outputs/confidenciales/clues_SINERHIAS_int.zip",password = Sys.getenv("pass"),dir = temp_dir)
+sinerhias=DBI::dbConnect(RSQLite::SQLite(), list.files(temp_dir,pattern = "clues_SINERHIAS_int.sqlite",full.names = T))
 
 #Usar archivo directo
-sinerhias=DBI::dbConnect(RSQLite::SQLite(),  "outputs/confidenciales/clues_SINERHIAS_int.sqlite")
+#sinerhias=DBI::dbConnect(RSQLite::SQLite(),  "outputs/confidenciales/clues_SINERHIAS_int.sqlite")
 
 source("codigos/funciones.R")
 #Cobertura
@@ -467,7 +471,7 @@ shinyApp(ui, function(input, output,session) {
       shinyjs::runjs(code =funcionColorearBotonBorrar("add") )
     }
   })
-  tabStatsServer("tab_stats", nivel_at = reactive(input$nivel_at), selected_tab = reactive(input$sidebarID))
+  tabStatsServer("tab_stats", nivel_at = reactive(input$nivel_at), selected_tab = reactive(input$sidebarID),limites_municipales=limites_municipales |> st_transform(4326),diccionarios=diccionarios)
   tabInfraServer("tab_infra", nivel_at = reactive(input$nivel_at), selected_tab = reactive(input$sidebarID), clues_en_operacion = clues_en_operacion, sinerhias = sinerhias)
 
 })

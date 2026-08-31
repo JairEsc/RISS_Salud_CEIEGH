@@ -11,3 +11,8 @@ outputs/confidenciales/*
 outputs/isocronas_pre_calculadas/*
 !outputs/confidenciales/Nota.txt
 !outputs/confidenciales/*zip
+outputs/*
+!outputs/confidenciales/clues_SINERHIAS_int.zip
+!outputs/confidenciales/Nota.txt
+!outputs/demograficos_con_info_accesibilidad.geojson
+!outputs/Diccionarios/
